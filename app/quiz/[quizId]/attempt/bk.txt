@@ -1,0 +1,1390 @@
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import {
+  Play,
+  RotateCcw,
+  Share2,
+  BookOpen,
+  Clock,
+  Users,
+  Star,
+  Mic,
+  Square,
+  Send,
+  Timer,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle,
+  Circle,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { useParams, useRouter } from "next/navigation";
+import { quizService } from "@/lib/services/quiz-service";
+import type { IQuiz } from "@/lib/types/interfaces";
+import { SUCCESS_CODE } from "@/lib/constants";
+import { useToast } from "@/hooks/use-toast";
+
+interface QuestionAnswer {
+  questionId: number;
+  questionType: string;
+  answer: string | boolean | Blob | null;
+  timeSpent: number;
+  timestamp: string;
+}
+
+interface QuizAnswers {
+  [questionId: number]: QuestionAnswer;
+}
+
+interface IQuestion {
+  id: string;
+  type: string;
+  text: string;
+  options?: Array<{ id: string; text: string; isCorrect: boolean }>;
+  pronunciationText?: string | null;
+  correctBlanks?: string[] | null;
+  trueFalseAnswer?: boolean | null;
+  audioUrl?: string | null;
+  imageUrl?: string | null;
+  maxListeningTime?: number | null;
+  points: number;
+  timeLimit?: number | null;
+  difficulty: string;
+  category: string;
+}
+
+interface IQuizContent {
+  id: string;
+  title: string;
+  description: string;
+  category: string | null;
+  difficulty: string | null;
+  duration: number | null;
+  questionCount: number;
+  status: string | null;
+  rating: number;
+  attempts: number;
+  passingScore: number;
+  navigationMode: string;
+  hasTimer: boolean;
+  timeLimit: number;
+  warningTime: number;
+  allowQuestionPicker: boolean;
+  shuffleQuestions: boolean;
+  shuffleAnswers: boolean;
+  showProgress: boolean;
+  allowPause: boolean;
+  maxAttempts: number;
+  questions: IQuestion[];
+}
+
+type QuestionType =
+  | "MULTIPLE_CHOICE"
+  | "FILL_BLANK"
+  | "TRUE_FALSE"
+  | "PRONUNCIATION"
+  | "LISTENING";
+type DifficultyLevel = "Intermediate" | "Advanced" | "Beginner";
+type NavigationMode = "sequential" | "back-only" | "free-navigation";
+
+const mapApiQuestionToState = (question: IQuestion) => {
+  const baseQuestion = {
+    id: question.id,
+    type: question.type as QuestionType,
+    question: question.text,
+    instructions: `Complete this ${question.type
+      .toLowerCase()
+      .replace("_", " ")} question.`,
+    points: question.points,
+    difficulty: question.difficulty as DifficultyLevel,
+    category: question.category,
+  };
+
+  switch (question.type) {
+    case "MULTIPLE_CHOICE":
+      return {
+        ...baseQuestion,
+        options: question.options?.map((opt) => opt) || [],
+        correct: question.options?.find((opt) => opt.isCorrect)?.text || "",
+      };
+    case "FILL_IN_THE_BLANK":
+      return {
+        ...baseQuestion,
+        fillInText: question.text,
+        correct: question.correctBlanks || [],
+      };
+    case "TRUE_FALSE":
+      return {
+        ...baseQuestion,
+        correct: question.trueFalseAnswer,
+      };
+    case "PRONUNCIATION":
+      return {
+        ...baseQuestion,
+        pronunciationText: question.pronunciationText || "",
+      };
+    case "LISTENING":
+      return {
+        ...baseQuestion,
+        audioUrl: question.audioUrl || "",
+        options: question.options?.map((opt) => opt.text) || [],
+        correct: question.options?.find((opt) => opt.isCorrect)?.text || "",
+        maxListeningTime: question.maxListeningTime || 0,
+      };
+    default:
+      return baseQuestion;
+  }
+};
+
+const mapApiQuizToState = (quiz: IQuizContent): IQuiz => {
+  return {
+    id: quiz.id,
+    title: quiz.title,
+    description: quiz.description,
+    creator: "Unknown", // TODO: Add author name when available
+    participants: quiz.attempts,
+    rating: quiz.rating,
+    duration: quiz.duration ? `${quiz.duration} min` : "N/A",
+    difficulty: (quiz.difficulty || "Intermediate") as DifficultyLevel,
+    navigationMode: quiz.navigationMode
+      .toLowerCase()
+      .replace("_", "-") as NavigationMode,
+    hasTimer: quiz.hasTimer,
+    timeLimit: quiz.timeLimit,
+    allowQuestionPicker: quiz.allowQuestionPicker,
+    questions: quiz.questions.map(mapApiQuestionToState),
+  };
+};
+
+export default function QuizAttemptPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isStarted, setIsStarted] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState("");
+  const [selectedOptionId, setSelectedOptionId] = useState<string>("");
+  const [fillInAnswer, setFillInAnswer] = useState("");
+  const [trueFalseAnswer, setTrueFalseAnswer] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [hasRecorded, setHasRecorded] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [listeningTime, setListeningTime] = useState(0);
+  const [hasListened, setHasListened] = useState(false);
+  const [quizAnswers, setQuizAnswers] = useState<QuizAnswers>({});
+  const [questionStartTime, setQuestionStartTime] = useState<number>(
+    Date.now()
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fillInAnswers, setFillInAnswers] = useState<string[]>([]);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [quizStartTime, setQuizStartTime] = useState<number>(0);
+  const [isTimerActive, setIsTimerActive] = useState(false);
+  const [content, setContent] = useState<IQuiz | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Question navigator refs
+  const questionNavRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const listeningTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const quizTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Timer effect
+  useEffect(() => {
+    if (isTimerActive && timeRemaining > 0) {
+      quizTimerRef.current = setInterval(() => {
+        setTimeRemaining((prev) => {
+          if (prev <= 1) {
+            setIsTimerActive(false);
+            // Auto-submit when time runs out
+            submitQuiz();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (quizTimerRef.current) {
+        clearInterval(quizTimerRef.current);
+      }
+    }
+
+    return () => {
+      if (quizTimerRef.current) {
+        clearInterval(quizTimerRef.current);
+      }
+    };
+  }, [isTimerActive, timeRemaining]);
+
+  // Scroll question navigator
+  const scrollQuestionNav = (direction: "left" | "right") => {
+    if (questionNavRef.current) {
+      const scrollAmount = 200;
+      const currentScroll = questionNavRef.current.scrollLeft;
+      const newScroll =
+        direction === "left"
+          ? currentScroll - scrollAmount
+          : currentScroll + scrollAmount;
+
+      questionNavRef.current.scrollTo({
+        left: newScroll,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  // Handle question navigation
+  const handleQuestionNavigation = (questionIndex: number) => {
+    if (!content?.questions) return;
+
+    if (canNavigateToQuestion(questionIndex)) {
+      // Save current answer before jumping
+      const currentQ = content.questions[currentQuestion];
+      if (!currentQ) return;
+
+      switch (currentQ.type) {
+        case "MULTIPLE_CHOICE":
+          if (selectedAnswer)
+            saveAnswer(currentQ.id, selectedAnswer, currentQ.type);
+          break;
+        case "FILL_IN_THE_BLANK":
+          if (fillInAnswers.some((answer) => answer.trim())) {
+            saveAnswer(
+              currentQ.id,
+              fillInAnswers.filter((answer) => answer.trim()),
+              currentQ.type
+            );
+          }
+          break;
+        case "TRUE_FALSE":
+          if (trueFalseAnswer)
+            saveAnswer(currentQ.id, trueFalseAnswer === "true", currentQ.type);
+          break;
+      }
+
+      setCurrentQuestion(questionIndex);
+      setProgress(((questionIndex + 1) / content.questions.length) * 100);
+
+      // Reset answer states
+      setSelectedAnswer("");
+      setFillInAnswers([]);
+      setTrueFalseAnswer("");
+      setHasRecorded(false);
+      setAudioBlob(null);
+
+      // Scroll the clicked question into view
+      if (questionNavRef.current) {
+        const questionButton = questionNavRef.current.children[
+          questionIndex
+        ] as HTMLElement;
+        if (questionButton) {
+          questionButton.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "center",
+          });
+        }
+      }
+    }
+  };
+
+  // Enhanced answer saving function
+  const saveAnswer = async (
+    questionId: string,
+    answer: string | boolean | Blob | null,
+    questionType: QuestionType
+  ) => {
+    // Validate answer based on question type
+    const isValidAnswer = (() => {
+      switch (questionType) {
+        case "MULTIPLE_CHOICE":
+          return typeof answer === "string" && answer.trim() !== "";
+        case "FILL_IN_THE_BLANK":
+          if (Array.isArray(answer)) {
+            return answer.some((a) => a.trim() !== "");
+          }
+          return false;
+        case "TRUE_FALSE":
+          return typeof answer === "boolean";
+        case "PRONUNCIATION":
+          return answer instanceof Blob;
+        case "LISTENING":
+          return typeof answer === "string" && answer.trim() !== "";
+        default:
+          return false;
+      }
+    })();
+
+    if (!isValidAnswer) {
+      return; // Don't submit if answer is invalid or blank
+    }
+
+    // Check if answer is the same as previously saved
+    const previousAnswer = quizAnswers[questionId];
+    const isAnswerSame = (() => {
+      if (!previousAnswer) return false;
+
+      switch (questionType) {
+        case "MULTIPLE_CHOICE":
+          return (
+            previousAnswer.answer === answer &&
+            previousAnswer.selectedOptions?.[0] === selectedOptionId
+          );
+        case "FILL_IN_THE_BLANK":
+          if (Array.isArray(answer) && Array.isArray(previousAnswer.answer)) {
+            return (
+              JSON.stringify(answer) === JSON.stringify(previousAnswer.answer)
+            );
+          }
+          return false;
+        case "TRUE_FALSE":
+          return previousAnswer.answer === answer;
+        case "PRONUNCIATION":
+          // For audio, we'll always save as it's a new recording
+          return false;
+        case "LISTENING":
+          return previousAnswer.answer === answer;
+        default:
+          return false;
+      }
+    })();
+
+    if (isAnswerSame) {
+      return; // Don't submit if answer is the same
+    }
+
+    const timeSpent = Date.now() - questionStartTime;
+    const answerData: QuestionAnswer = {
+      questionId,
+      questionType,
+      answer,
+      timeSpent,
+      timestamp: new Date().toISOString(),
+    };
+
+    setQuizAnswers((prev) => ({
+      ...prev,
+      [questionId]: answerData,
+    }));
+
+    try {
+      const response = await quizService.submitQuizAttemptQuestion(
+        params.attemptId as string,
+        {
+          questionId: questionId.toString(),
+          answer: answer,
+          timeSpent,
+          selectedOptions:
+            questionType === "MULTIPLE_CHOICE" ? [selectedOptionId] : null,
+          fillInBlanksAnswers:
+            questionType === "FILL_IN_THE_BLANK" ? fillInAnswers : null,
+        }
+      );
+
+      if (response.meta.code !== SUCCESS_CODE) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to save answer. Please try again.",
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save answer. Please try again.",
+      });
+    }
+  };
+
+  // Load saved answer when navigating to a question
+  const loadSavedAnswer = (questionId: string) => {
+    if (!content?.questions) return;
+
+    const savedAnswer = quizAnswers[questionId];
+    if (savedAnswer) {
+      const currentQ = content.questions[currentQuestion];
+      if (!currentQ) return;
+
+      switch (currentQ.type) {
+        case "MULTIPLE_CHOICE":
+          if (savedAnswer.selectedOptions?.[0]) {
+            const option = currentQ.options?.find(
+              (opt) => opt.id === savedAnswer.selectedOptions[0]
+            );
+            if (option) {
+              setSelectedAnswer(option.text);
+              setSelectedOptionId(option.id);
+            }
+          }
+          break;
+        case "FILL_IN_THE_BLANK":
+          if (Array.isArray(savedAnswer.answer)) {
+            setFillInAnswers(savedAnswer.answer);
+          }
+          break;
+        case "TRUE_FALSE":
+          setTrueFalseAnswer(savedAnswer.answer === true ? "true" : "false");
+          break;
+        case "PRONUNCIATION":
+          if (savedAnswer.answer instanceof Blob) {
+            setAudioBlob(savedAnswer.answer);
+            setHasRecorded(true);
+          }
+          break;
+      }
+    }
+  };
+
+  // Submit all answers
+  const submitQuiz = () => {
+    setIsSubmitting(true);
+    setIsTimerActive(false);
+
+    console.log("=== QUIZ SUBMISSION ===");
+    console.log("Quiz ID:", params.quizId);
+    console.log("Attempt ID:", params.attemptId);
+    console.log("Quiz Title:", content?.title);
+    console.log("Navigation Mode:", content?.navigationMode);
+    console.log("Had Timer:", content?.hasTimer);
+    if (content?.hasTimer) {
+      console.log(
+        "Time Used:",
+        `${Math.floor((Date.now() - quizStartTime) / 1000 / 60)} minutes`
+      );
+    }
+    console.log("Total Questions:", content?.questions.length);
+    console.log("Answered Questions:", Object.keys(quizAnswers).length);
+    console.log("Submission Time:", new Date().toISOString());
+
+    // Calculate completion stats
+    const answeredCount = Object.keys(quizAnswers).length;
+    const completionRate = (answeredCount / content?.questions.length) * 100;
+    const totalTimeSpent = Object.values(quizAnswers).reduce(
+      (total, answer) => total + answer.timeSpent,
+      0
+    );
+
+    console.log("\n=== COMPLETION STATS ===");
+    console.log("Completion Rate:", `${completionRate.toFixed(1)}%`);
+    console.log(
+      "Total Time Spent:",
+      `${(totalTimeSpent / 1000 / 60).toFixed(1)} minutes`
+    );
+
+    // Simulate submission delay
+    setTimeout(() => {
+      setIsSubmitting(false);
+      router.push(`/quiz-results/${params.quizId}/attempt/${params.attemptId}`);
+    }, 2000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (listeningTimerRef.current) clearInterval(listeningTimerRef.current);
+      if (quizTimerRef.current) clearInterval(quizTimerRef.current);
+    };
+  }, []);
+
+  // Load saved answer when question changes
+  useEffect(() => {
+    if (isStarted) {
+      setQuestionStartTime(Date.now());
+      loadSavedAnswer(content?.questions[currentQuestion].id);
+    }
+  }, [currentQuestion, isStarted]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const formatTimerDisplay = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, "0")}:${secs
+        .toString()
+        .padStart(2, "0")}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const canNavigateToQuestion = (questionIndex: number) => {
+    if (content?.navigationMode === "free-navigation") return true;
+    if (content?.navigationMode === "back-only")
+      return questionIndex <= currentQuestion;
+    if (content?.navigationMode === "sequential")
+      return questionIndex === currentQuestion;
+    return false;
+  };
+
+  const canGoBack = () => {
+    if (content?.navigationMode === "sequential") return false;
+    return currentQuestion > 0;
+  };
+
+  const canGoForward = () => {
+    if (content?.navigationMode === "sequential") return canProceed();
+    if (content?.navigationMode === "back-only")
+      return currentQuestion < content?.questions.length - 1 && canProceed();
+    return currentQuestion < content?.questions.length - 1;
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        audioChunksRef.current.push(event.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: "audio/wav",
+        });
+        setAudioBlob(audioBlob);
+        setHasRecorded(true);
+
+        const currentQ = content?.questions[currentQuestion];
+        if (currentQ) {
+          await saveAnswer(currentQ.id, audioBlob, currentQ.type);
+        }
+
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+
+      timerRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } catch (error) {
+      console.error("Error accessing microphone:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description:
+          "Unable to access microphone. Please check your permissions.",
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    }
+  };
+
+  const playRecording = () => {
+    if (audioBlob) {
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audio.play();
+    }
+  };
+
+  const handleNext = async () => {
+    if (!content?.questions) return;
+
+    // Save current answer before moving to next question
+    const currentQ = content.questions[currentQuestion];
+    if (!currentQ) return;
+
+    switch (currentQ.type) {
+      case "MULTIPLE_CHOICE":
+        if (selectedAnswer)
+          await saveAnswer(currentQ.id, selectedAnswer, currentQ.type);
+        break;
+      case "FILL_IN_THE_BLANK":
+        if (fillInAnswers.some((answer) => answer.trim())) {
+          await saveAnswer(
+            currentQ.id,
+            fillInAnswers.filter((answer) => answer.trim()),
+            currentQ.type
+          );
+        }
+        break;
+      case "TRUE_FALSE":
+        if (trueFalseAnswer)
+          await saveAnswer(
+            currentQ.id,
+            trueFalseAnswer === "true",
+            currentQ.type
+          );
+        break;
+      case "LISTENING":
+        if (selectedAnswer && hasListened)
+          await saveAnswer(currentQ.id, selectedAnswer, currentQ.type);
+        break;
+    }
+
+    if (currentQuestion < content.questions.length - 1) {
+      const nextQuestionIndex = currentQuestion + 1;
+      setCurrentQuestion(nextQuestionIndex);
+      setProgress(((nextQuestionIndex + 1) / content.questions.length) * 100);
+
+      // Load the saved answer for the next question
+      const nextQuestion = content.questions[nextQuestionIndex];
+      const savedAnswer = quizAnswers[nextQuestion.id];
+
+      if (savedAnswer) {
+        switch (nextQuestion.type) {
+          case "MULTIPLE_CHOICE":
+            if (savedAnswer.selectedOptions?.[0]) {
+              const option = nextQuestion.options?.find(
+                (opt) => opt.id === savedAnswer.selectedOptions[0]
+              );
+              if (option) {
+                setSelectedAnswer(option.text);
+                setSelectedOptionId(option.id);
+              }
+            }
+            break;
+          case "FILL_IN_THE_BLANK":
+            if (savedAnswer.fillInBlanksAnswers) {
+              setFillInAnswers(savedAnswer.fillInBlanksAnswers);
+            }
+            break;
+          case "TRUE_FALSE":
+            setTrueFalseAnswer(savedAnswer.answer === true ? "true" : "false");
+            break;
+          case "PRONUNCIATION":
+            if (savedAnswer.answer instanceof Blob) {
+              setAudioBlob(savedAnswer.answer);
+              setHasRecorded(true);
+            }
+            break;
+        }
+      } else {
+        // Reset states if no saved answer
+        setSelectedAnswer("");
+        setFillInAnswers([]);
+        setTrueFalseAnswer("");
+        setHasRecorded(false);
+        setAudioBlob(null);
+        setRecordingTime(0);
+        setHasListened(false);
+        setListeningTime(0);
+        if (audioRef.current) {
+          audioRef.current = null;
+        }
+      }
+    }
+  };
+
+  const handlePrevious = async () => {
+    if (!content?.questions) return;
+
+    if (canGoBack()) {
+      const prevQuestionIndex = currentQuestion - 1;
+      setCurrentQuestion(prevQuestionIndex);
+      setProgress(((prevQuestionIndex + 1) / content.questions.length) * 100);
+
+      // Load the saved answer for the previous question
+      const prevQuestion = content.questions[prevQuestionIndex];
+      const savedAnswer = quizAnswers[prevQuestion.id];
+
+      if (savedAnswer) {
+        switch (prevQuestion.type) {
+          case "MULTIPLE_CHOICE":
+            if (savedAnswer.selectedOptions?.[0]) {
+              const option = prevQuestion.options?.find(
+                (opt) => opt.id === savedAnswer.selectedOptions[0]
+              );
+              if (option) {
+                setSelectedAnswer(option.text);
+                setSelectedOptionId(option.id);
+              }
+            }
+            break;
+          case "FILL_IN_THE_BLANK":
+            if (savedAnswer.fillInBlanksAnswers) {
+              setFillInAnswers(savedAnswer.fillInBlanksAnswers);
+            }
+            break;
+          case "TRUE_FALSE":
+            setTrueFalseAnswer(savedAnswer.answer === true ? "true" : "false");
+            break;
+          case "PRONUNCIATION":
+            if (savedAnswer.answer instanceof Blob) {
+              setAudioBlob(savedAnswer.answer);
+              setHasRecorded(true);
+            }
+            break;
+        }
+      } else {
+        // Reset states if no saved answer
+        setSelectedAnswer("");
+        setFillInAnswers([]);
+        setTrueFalseAnswer("");
+        setHasRecorded(false);
+        setAudioBlob(null);
+      }
+    }
+  };
+
+  const handleFinish = async () => {
+    if (!content?.questions) return;
+
+    // Save current answer before finishing
+    const currentQ = content.questions[currentQuestion];
+    if (!currentQ) return;
+
+    switch (currentQ.type) {
+      case "MULTIPLE_CHOICE":
+        if (selectedAnswer)
+          await saveAnswer(currentQ.id, selectedAnswer, currentQ.type);
+        break;
+      case "FILL_IN_THE_BLANK":
+        if (fillInAnswers.some((answer) => answer.trim())) {
+          await saveAnswer(
+            currentQ.id,
+            fillInAnswers.filter((answer) => answer.trim()),
+            currentQ.type
+          );
+        }
+        break;
+      case "TRUE_FALSE":
+        if (trueFalseAnswer)
+          await saveAnswer(
+            currentQ.id,
+            trueFalseAnswer === "true",
+            currentQ.type
+          );
+        break;
+      case "LISTENING":
+        if (selectedAnswer && hasListened)
+          await saveAnswer(currentQ.id, selectedAnswer, currentQ.type);
+        break;
+    }
+
+    setProgress(100);
+    submitQuiz();
+  };
+
+  // Update handleMultipleChoiceChange to handle option selection
+  const handleMultipleChoiceChange = async (
+    value: string,
+    optionId: string
+  ) => {
+    if (!content?.questions || !value.trim()) return;
+
+    setSelectedAnswer(value);
+    setSelectedOptionId(optionId);
+    const currentQ = content.questions[currentQuestion];
+    if (!currentQ) return;
+
+    await saveAnswer(currentQ.id, value, currentQ.type);
+  };
+
+  // Update handleFillInBlur to handle fill-in-blank answers
+  const handleFillInBlur = async () => {
+    if (!content?.questions) return;
+
+    const nonEmptyAnswers = fillInAnswers.filter(
+      (answer) => answer.trim() !== ""
+    );
+    if (nonEmptyAnswers.length > 0) {
+      const currentQ = content.questions[currentQuestion];
+      if (!currentQ) return;
+
+      await saveAnswer(currentQ.id, nonEmptyAnswers, currentQ.type);
+    }
+  };
+
+  const handleTrueFalseChange = async (value: string) => {
+    if (!content?.questions || !value) return;
+
+    setTrueFalseAnswer(value);
+    const currentQ = content.questions[currentQuestion];
+    if (!currentQ) return;
+
+    await saveAnswer(currentQ.id, value === "true", currentQ.type);
+  };
+
+  const canProceed = () => {
+    if (!content?.questions) return false;
+
+    const currentQ = content.questions[currentQuestion];
+    if (!currentQ) return false;
+
+    switch (currentQ.type) {
+      case "MULTIPLE_CHOICE":
+        return selectedAnswer !== "";
+      case "FILL_IN_THE_BLANK":
+        const blanksCount = currentQ.question?.split("_____").length - 1 || 0;
+        const filledBlanks = fillInAnswers.filter(
+          (answer) => answer.trim() !== ""
+        ).length;
+        return filledBlanks === blanksCount;
+      case "PRONUNCIATION":
+        return hasRecorded;
+      case "TRUE_FALSE":
+        return trueFalseAnswer !== "";
+      case "listening":
+        return selectedAnswer !== "" && hasListened;
+      default:
+        return false;
+    }
+  };
+
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return "text-green-600";
+    if (score >= 80) return "text-blue-600";
+    if (score >= 70) return "text-yellow-600";
+    return "text-red-600";
+  };
+
+  const getNavigationModeDescription = () => {
+    switch (content?.navigationMode) {
+      case "sequential":
+        return "Questions must be answered in order";
+      case "back-only":
+        return "You can review previous questions";
+      case "free-navigation":
+        return "Navigate freely between questions";
+      default:
+        return "";
+    }
+  };
+
+  useEffect(() => {
+    const fetchQuiz = async () => {
+      try {
+        const [quizResponse, attemptResponse] = await Promise.all([
+          quizService.getQuizById(params.quizId as string),
+          quizService.getQuizAttempt(params.attemptId as string),
+        ]);
+
+        if (quizResponse.meta.code === SUCCESS_CODE && quizResponse.data) {
+          const mappedQuiz = mapApiQuizToState(quizResponse.data);
+          setContent(mappedQuiz);
+
+          // Initialize the quiz attempt
+          setIsStarted(true);
+          setProgress(0);
+          setQuestionStartTime(Date.now());
+          setQuizStartTime(Date.now());
+
+          if (quizResponse.data.hasTimer) {
+            setTimeRemaining(quizResponse.data.timeLimit * 60);
+            setIsTimerActive(true);
+          }
+
+          // Restore previous answers if they exist
+          if (
+            attemptResponse.meta.code === SUCCESS_CODE &&
+            attemptResponse.data
+          ) {
+            const answers = attemptResponse.data.answers || [];
+            const answersMap: QuizAnswers = {};
+
+            answers.forEach((answer) => {
+              answersMap[answer.questionId] = {
+                questionId: answer.questionId,
+                questionType: answer.questionType,
+                answer: answer.answer,
+                timeSpent: answer.timeSpent,
+                timestamp: answer.timestamp,
+                selectedOptions: answer.selectedOptions || [],
+              };
+
+              // Restore state based on question type
+              const question = mappedQuiz.questions.find(
+                (q) => q.id === answer.questionId
+              );
+              if (question) {
+                switch (question.type) {
+                  case "MULTIPLE_CHOICE":
+                    if (answer.selectedOptions?.[0]) {
+                      const option = question.options?.find(
+                        (opt) => opt.id === answer.selectedOptions[0]
+                      );
+                      if (option) {
+                        setSelectedAnswer(option.text);
+                        setSelectedOptionId(option.id);
+                      }
+                    }
+                    break;
+                  case "FILL_IN_THE_BLANK":
+                    if (Array.isArray(answer.answer)) {
+                      setFillInAnswers(answer.answer);
+                    }
+                    break;
+                  case "TRUE_FALSE":
+                    setTrueFalseAnswer(
+                      answer.answer === true ? "true" : "false"
+                    );
+                    break;
+                  case "PRONUNCIATION":
+                    if (answer.answer instanceof Blob) {
+                      setAudioBlob(answer.answer);
+                      setHasRecorded(true);
+                    }
+                    break;
+                }
+              }
+            });
+
+            setQuizAnswers(answersMap);
+          }
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Failed to load quiz content. Please try again.",
+          });
+        }
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description:
+            "An error occurred while loading the quiz. Please try again.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchQuiz();
+  }, [params.quizId, params.attemptId, toast]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!content) {
+    return <div>Quiz not found</div>;
+  }
+
+  const currentQ = content.questions[currentQuestion];
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-4xl animate-fade-in">
+      {/* Progress Header with Timer */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-bold text-gray-900">{content.title}</h1>
+          <div className="flex items-center space-x-4">
+            {content.hasTimer && (
+              <div
+                className={`flex items-center space-x-2 px-3 py-1 rounded-lg ${
+                  timeRemaining < 300
+                    ? "bg-red-100 text-red-700"
+                    : "bg-blue-100 text-blue-700"
+                }`}
+              >
+                <Timer className="h-4 w-4" />
+                <span className="font-mono font-semibold">
+                  {formatTimerDisplay(timeRemaining)}
+                </span>
+              </div>
+            )}
+            <span className="text-sm text-gray-600">
+              Question {currentQuestion + 1} of {content.questions.length}
+            </span>
+            <Badge
+              variant="outline"
+              className="border-green-600 text-green-600"
+            >
+              {Object.keys(quizAnswers).length} Answered
+            </Badge>
+          </div>
+        </div>
+
+        {/* Progress bar */}
+        <div className="space-y-4">
+          <Progress value={progress} className="h-2 bg-teal-100" />
+
+          {/* Horizontal Question Navigator */}
+          {content.allowQuestionPicker && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">
+                  Navigation: {getNavigationModeDescription()}
+                </span>
+                <span className="text-xs text-gray-500">
+                  Click questions to navigate
+                </span>
+              </div>
+
+              <div className="relative">
+                <div
+                  ref={questionNavRef}
+                  className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
+                  style={{ scrollbarWidth: "thin" }}
+                >
+                  {content.questions.map((_, index) => {
+                    const questionNumber = index + 1;
+                    const isAnswered =
+                      quizAnswers[content.questions[index].id] !== undefined;
+                    const isCurrent = currentQuestion === index;
+                    const canNavigate = canNavigateToQuestion(index);
+
+                    return (
+                      <button
+                        key={questionNumber}
+                        onClick={() => handleQuestionNavigation(index)}
+                        disabled={!canNavigate}
+                        className={`
+                          flex-shrink-0 w-12 h-12 rounded-lg border-2 flex items-center justify-center text-sm font-medium transition-all relative
+                          ${
+                            isCurrent
+                              ? "border-teal-600 bg-teal-600 text-white shadow-lg"
+                              : isAnswered
+                              ? "border-green-500 bg-green-50 text-green-700 hover:bg-green-100"
+                              : canNavigate
+                              ? "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50"
+                              : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                          }
+                        `}
+                      >
+                        {questionNumber}
+                        {isAnswered && !isCurrent && (
+                          <CheckCircle className="absolute -top-1 -right-1 h-4 w-4 text-green-500 bg-white rounded-full" />
+                        )}
+                        {!isAnswered && !isCurrent && canNavigate && (
+                          <Circle className="absolute -top-1 -right-1 h-4 w-4 text-gray-400 bg-white rounded-full" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Navigation arrows for large question sets */}
+                {content.questions.length > 8 && (
+                  <>
+                    <button
+                      onClick={() => scrollQuestionNav("left")}
+                      className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 w-8 h-8 rounded-full bg-white border shadow-md flex items-center justify-center hover:bg-gray-50 z-10"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => scrollQuestionNav("right")}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 w-8 h-8 rounded-full bg-white border shadow-md flex items-center justify-center hover:bg-gray-50 z-10"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Question Card */}
+      <Card className="border-teal-100 mb-8">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl">{currentQ.question}</CardTitle>
+            <div className="flex items-center space-x-2">
+              <Badge
+                variant="outline"
+                className="border-teal-600 text-teal-600"
+              >
+                {currentQ.type === "MULTIPLE_CHOICE"
+                  ? "Multiple Choice"
+                  : currentQ.type === "FILL_IN_THE_BLANK"
+                  ? "Fill in the Blank"
+                  : currentQ.type === "PRONUNCIATION"
+                  ? "PRONUNCIATION"
+                  : currentQ.type === "TRUE_FALSE"
+                  ? "True/False"
+                  : currentQ.type === "listening"
+                  ? "Listening"
+                  : currentQ.type}
+              </Badge>
+              {quizAnswers[currentQ.id] && (
+                <Badge className="bg-green-100 text-green-800">
+                  ✓ Answered
+                </Badge>
+              )}
+            </div>
+          </div>
+          <p className="text-sm text-gray-600">{currentQ.instructions}</p>
+        </CardHeader>
+        <CardContent>
+          {currentQ.imageUrl && (
+            <div className="mb-4">
+              <img
+                src={currentQ.imageUrl || "/placeholder.svg"}
+                alt="Question image"
+                className="max-w-full h-auto rounded-lg border shadow-sm"
+              />
+            </div>
+          )}
+          {/* Multiple Choice */}
+          {currentQ.type === "MULTIPLE_CHOICE" && (
+            <RadioGroup
+              value={selectedAnswer}
+              onValueChange={(value) => {
+                const option = currentQ.options?.find(
+                  (opt) => opt.text === value
+                );
+                if (option) {
+                  handleMultipleChoiceChange(value, option.id);
+                }
+              }}
+            >
+              <div className="space-y-4">
+                {currentQ.options?.map((option, index) => {
+                  return (
+                    <div key={index} className="flex items-center space-x-3">
+                      <RadioGroupItem
+                        value={option.text}
+                        id={`option-${index}`}
+                      />
+                      <Label
+                        htmlFor={`option-${index}`}
+                        className="flex-1 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-teal-50 transition-colors"
+                      >
+                        {option.text}
+                      </Label>
+                    </div>
+                  );
+                })}
+              </div>
+            </RadioGroup>
+          )}
+
+          {/* Fill in the Blank */}
+          {currentQ.type === "FILL_IN_THE_BLANK" && currentQ.question && (
+            <div className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <p className="text-lg font-medium text-blue-900">
+                  {currentQ.question
+                    ?.split("_____")
+                    .map((part, index, array) => (
+                      <span key={index}>
+                        {part}
+                        {index < array.length - 1 && (
+                          <input
+                            type="text"
+                            value={fillInAnswers[index] || ""}
+                            onChange={(e) => {
+                              const newAnswers = [...fillInAnswers];
+                              newAnswers[index] = e.target.value;
+                              setFillInAnswers(newAnswers);
+                              handleFillInBlur();
+                            }}
+                            onBlur={handleFillInBlur}
+                            className="mx-2 px-3 py-1 border border-blue-300 rounded focus:border-blue-500 focus:ring-blue-500 min-w-[100px] text-center"
+                            placeholder="___"
+                          />
+                        )}
+                      </span>
+                    ))}
+                </p>
+              </div>
+              <div className="text-sm text-gray-600">
+                Fill in all the blanks with the appropriate words.
+              </div>
+            </div>
+          )}
+
+          {/* True/False */}
+          {currentQ.type === "TRUE_FALSE" && (
+            <RadioGroup
+              value={trueFalseAnswer}
+              onValueChange={handleTrueFalseChange}
+            >
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <RadioGroupItem value="true" id="true" />
+                  <Label
+                    htmlFor="true"
+                    className="flex-1 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-teal-50 transition-colors"
+                  >
+                    True
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <RadioGroupItem value="false" id="false" />
+                  <Label
+                    htmlFor="false"
+                    className="flex-1 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-teal-50 transition-colors"
+                  >
+                    False
+                  </Label>
+                </div>
+              </div>
+            </RadioGroup>
+          )}
+
+          {/* Pronunciation */}
+          {currentQ.type === "PRONUNCIATION" && (
+            <div className="space-y-6">
+              <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                <h3 className="font-medium text-blue-800 mb-3">
+                  Text to pronounce:
+                </h3>
+                <p className="text-2xl font-semibold text-blue-900 mb-4 leading-relaxed">
+                  {currentQ.pronunciationText}
+                </p>
+              </div>
+
+              <div className="bg-gray-50 p-6 rounded-lg border">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-medium text-gray-800">
+                    Record your pronunciation:
+                  </h3>
+                  {isRecording && (
+                    <div className="flex items-center text-red-600">
+                      <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse mr-2"></div>
+                      <span className="font-mono">
+                        {formatTime(recordingTime)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  {!isRecording ? (
+                    <Button
+                      onClick={startRecording}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      disabled={hasRecorded}
+                    >
+                      <Mic className="h-4 w-4 mr-2" />
+                      {hasRecorded ? "Recorded" : "Start Recording"}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={stopRecording}
+                      className="bg-gray-600 hover:bg-gray-700 text-white"
+                    >
+                      <Square className="h-4 w-4 mr-2" />
+                      Stop Recording
+                    </Button>
+                  )}
+
+                  {hasRecorded && (
+                    <>
+                      <Button
+                        onClick={playRecording}
+                        variant="outline"
+                        className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                      >
+                        <Play className="h-4 w-4 mr-2" />
+                        Play Recording
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          setHasRecorded(false);
+                          setAudioBlob(null);
+                          setRecordingTime(0);
+                        }}
+                        variant="outline"
+                        className="border-gray-600 text-gray-600 hover:bg-gray-50"
+                      >
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Re-record
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {hasRecorded && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-green-700 text-sm">
+                      ✓ Recording completed! Duration:{" "}
+                      {formatTime(recordingTime)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Navigation */}
+      <div className="flex justify-between">
+        <Button
+          variant="outline"
+          className="border-teal-600 text-teal-600 hover:bg-teal-50"
+          disabled={!canGoBack()}
+          onClick={handlePrevious}
+        >
+          <RotateCcw className="h-4 w-4 mr-2" />
+          Previous
+        </Button>
+
+        <div className="flex items-center space-x-4">
+          <Button
+            onClick={submitQuiz}
+            variant="outline"
+            className="border-blue-600 text-blue-600 hover:bg-blue-50"
+            disabled={isSubmitting || Object.keys(quizAnswers).length === 0}
+          >
+            {isSubmitting ? (
+              <>
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-2" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-2" />
+                Submit Quiz ({Object.keys(quizAnswers).length}/
+                {content.questions.length})
+              </>
+            )}
+          </Button>
+
+          {currentQuestion < content.questions.length - 1 ? (
+            <Button
+              onClick={handleNext}
+              disabled={!canGoForward()}
+              className="bg-teal-600 hover:bg-teal-700 text-white disabled:opacity-50"
+            >
+              Next Question
+            </Button>
+          ) : (
+            <Button
+              onClick={handleFinish}
+              disabled={!canProceed()}
+              className="bg-teal-600 hover:bg-teal-700 text-white disabled:opacity-50"
+            >
+              Finish Assessment
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

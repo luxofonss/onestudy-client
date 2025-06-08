@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  onestudy-client:
+    image: onestudy-client:v0.3.1
+    ports:
+      - "3500:3000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    restart: unless-stopped
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - onestudy-client
+    restart: unless-stopped
