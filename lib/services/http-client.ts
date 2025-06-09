@@ -27,11 +27,11 @@ export class HttpClient {
         const refreshed = await this.refreshToken()
         if (!refreshed) {
           this.clearTokens()
-          throw new Error("Authentication failed")
+          // throw new Error("Authentication failed")
         }
-        throw new Error("Token refreshed, retry request")
+        // throw new Error("Token refreshed, retry request")
       }
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      // throw new Error(`HTTP ${response.status}: ${response.statusText}`)
     }
 
     const data = await response.json()

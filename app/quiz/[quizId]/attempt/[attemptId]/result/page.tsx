@@ -155,13 +155,13 @@ export default function QuizResultsPage() {
             const correctOption = question.options?.find(
               (opt) => opt.isCorrect
             );
-            correctAnswer = correctOption?.id || null;
+            correctAnswer = correctOption?.text || null;
 
             // Get user's selected answer
             const selectedAnswer = answer.selectedAnswers?.[0]; // Only take the first selected answer
             userAnswer =
               question.options?.find((opt) => opt.id === selectedAnswer.id)
-                ?.id || null;
+                ?.text || null;
 
             // Check if user's answer matches the correct option
             console.log(selectedAnswer);
@@ -450,6 +450,7 @@ export default function QuizResultsPage() {
               }`}
             >
               {result.userAnswer || "No answer provided"}
+              {result.userAnswer}
             </p>
           </div>
           <div className="p-4 rounded-lg bg-green-50 border border-green-200">

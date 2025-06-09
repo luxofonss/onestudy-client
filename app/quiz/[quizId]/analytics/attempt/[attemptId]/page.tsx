@@ -24,40 +24,99 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { AudioPreview } from "@/components/ui/audio-preview";
+import { quizService } from "@/lib/services/quiz-service";
+import { SUCCESS_CODE } from "@/lib/constants";
 
+// Updated interface to match the new API response
 interface QuizAttemptDetail {
   id: string;
+  quizId: string;
   userId: string;
-  userName: string;
-  userEmail: string;
-  userAvatar?: string;
-  score: number;
-  totalQuestions: number;
-  correctAnswers: number;
-  timeSpent: number;
-  completedAt: string;
-  passed: boolean;
-  creatorComment?: string;
   quiz: {
     id: string;
     title: string;
     description: string;
+    category: string | null;
+    difficulty: string | null;
+    duration: number | null;
+    questionCount: number;
+    tags: string[];
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+    deletedAt: string | null;
+    authorId: string;
+    author: any | null;
+    rating: number;
+    attempts: number;
     passingScore: number;
+    navigationMode: string;
+    hasTimer: boolean;
+    timeLimit: number;
+    warningTime: number;
+    allowQuestionPicker: boolean;
+    shuffleQuestions: boolean;
+    shuffleAnswers: boolean;
+    showProgress: boolean;
+    allowPause: boolean;
+    maxAttempts: number;
+    questions: Array<{
+      id: string;
+      quizId: string;
+      type: string;
+      text: string;
+      options: Array<{
+        id: string;
+        isCorrect: boolean;
+        text: string;
+      }> | null;
+      pronunciationText: string | null;
+      correctBlanks: string[] | null;
+      trueFalseAnswer: boolean | null;
+      audioUrl: string | null;
+      imageUrl: string | null;
+      maxListeningTime: number | null;
+      correctAnswer: string[];
+      explanation: string | null;
+      points: number;
+      timeLimit: number | null;
+      difficulty: string;
+      category: string;
+      createdAt: string;
+      updatedAt: string;
+      deletedAt: string | null;
+      quiz: any | null;
+    }> | null;
+    quizAttempts: any | null;
+    savedByUsers: any | null;
+    leaderboardEntries: any | null;
   };
+  user: any | null;
   answers: Array<{
+    id: string;
+    quizAttemptId: string;
     questionId: string;
-    questionText: string;
-    questionType: string;
-    questionImage?: string;
-    questionAudio?: string;
-    userAnswer: any;
-    correctAnswer: any;
-    isCorrect: boolean;
-    timeSpent: number;
-    explanation?: string;
-    audioUrl?: string;
-    correctAudioUrl?: string;
+    selectedAnswers: Array<{
+      id: string;
+      isCorrect: boolean;
+      text: string;
+    }> | null;
+    fillInBlanksAnswers: string[] | null;
+    answerText: string | null;
+    scoreAchieved: number;
+    timeTaken: number;
+    audioUrl: string | null;
+    answeredAt: string;
+    correct: boolean;
   }>;
+  score: number;
+  totalQuestions: number | null;
+  correctAnswers: number;
+  timeSpent: number;
+  completedAt: string;
+  passed: boolean;
+  deletedAt: string | null;
+  createdAt: string;
 }
 
 export default function CreatorAttemptDetailPage() {
@@ -77,96 +136,14 @@ export default function CreatorAttemptDetailPage() {
     const fetchAttemptDetail = async () => {
       setIsLoading(true);
       try {
-        // Mock data - replace with actual API call
-        const mockDetail: QuizAttemptDetail = {
-          id: attemptId as string,
-          userId: "user1",
-          userName: "Alice Johnson",
-          userEmail: "alice@example.com",
-          userAvatar: "/placeholder.svg",
-          score: 85,
-          totalQuestions: 5,
-          correctAnswers: 4,
-          timeSpent: 2700,
-          completedAt: "2024-01-20T10:30:00Z",
-          passed: true,
-          creatorComment:
-            "Great job! Your pronunciation has improved significantly.",
-          quiz: {
-            id: quizId as string,
-            title: "Advanced English Grammar",
-            description:
-              "Test your knowledge of advanced English grammar concepts",
-            passingScore: 70,
-          },
-          answers: [
-            {
-              questionId: "q1",
-              questionText: "Pronounce the word 'pronunciation'",
-              questionType: "pronunciation",
-              questionImage: "/images/pronunciation-example.jpg", // Add this
-              questionAudio: "/audio/pronunciation-question.mp3", // Add this
-              userAnswer: "prə-ˌnən-sē-ˈā-shən",
-              correctAnswer: "prə-ˌnən-sē-ˈā-shən",
-              isCorrect: true,
-              timeSpent: 45,
-              explanation:
-                "Perfect pronunciation! You nailed the stress pattern.",
-              audioUrl: "/audio/user-pronunciation.mp3",
-              correctAudioUrl: "/audio/correct-pronunciation.mp3",
-            },
-            {
-              questionId: "q2",
-              questionText: "What is the past tense of 'go'?",
-              questionType: "multiple_choice",
-              userAnswer: "went",
-              correctAnswer: "went",
-              isCorrect: true,
-              timeSpent: 15,
-              explanation:
-                "Correct! 'Went' is the irregular past tense of 'go'.",
-            },
-            {
-              questionId: "q3",
-              questionText:
-                "Fill in the blank: I _____ to the store yesterday.",
-              questionType: "fill_in_the_blank",
-              userAnswer: "went",
-              correctAnswer: "went",
-              isCorrect: true,
-              timeSpent: 20,
-              explanation: "Perfect! You used the correct past tense form.",
-            },
-            {
-              questionId: "q4",
-              questionText:
-                "True or False: 'Their' and 'there' are homophones.",
-              questionType: "true_false",
-              userAnswer: "true",
-              correctAnswer: "true",
-              isCorrect: true,
-              timeSpent: 12,
-              explanation:
-                "Correct! Homophones are words that sound the same but have different meanings.",
-            },
-            {
-              questionId: "q5",
-              questionText: "Pronounce the word 'schedule'",
-              questionType: "pronunciation",
-              userAnswer: "ˈsked-yül",
-              correctAnswer: "ˈsked-yül",
-              isCorrect: false,
-              timeSpent: 60,
-              explanation:
-                "Close! The American pronunciation is 'SKED-yool', while British is 'SHED-yool'.",
-              audioUrl: "/audio/user-schedule.mp3",
-              correctAudioUrl: "/audio/correct-schedule.mp3",
-            },
-          ],
-        };
+        const response = await quizService.getQuizAttempt(attemptId as string);
 
-        setAttemptDetail(mockDetail);
-        setComment(mockDetail.creatorComment || "");
+        if (response.meta.code === SUCCESS_CODE && response.data) {
+          setAttemptDetail(response.data);
+          setComment(response.data.creatorComment || "");
+        } else {
+          console.error("Failed to fetch attempt detail:", response);
+        }
       } catch (error) {
         console.error("Error fetching attempt detail:", error);
       } finally {
@@ -224,6 +201,86 @@ export default function CreatorAttemptDetailPage() {
     if (score >= 80) return "text-green-600 bg-green-50";
     if (score >= 60) return "text-yellow-600 bg-yellow-50";
     return "text-red-600 bg-red-50";
+  };
+
+  // Helper function to get user answer text based on answer type
+  const getUserAnswerText = (answer: any) => {
+    if (answer.selectedAnswers && answer.selectedAnswers.length > 0) {
+      return answer.selectedAnswers.map((sa: any) => sa.text).join(", ");
+    }
+    if (answer.fillInBlanksAnswers && answer.fillInBlanksAnswers.length > 0) {
+      return answer.fillInBlanksAnswers.join(", ");
+    }
+    if (answer.answerText) {
+      return answer.answerText;
+    }
+    return "No answer provided";
+  };
+
+  // Helper function to get question details by ID
+  const getQuestionById = (questionId: string) => {
+    if (!attemptDetail?.quiz?.questions) return null;
+    return attemptDetail.quiz.questions.find((q) => q.id === questionId);
+  };
+
+  // Helper function to get correct answer text based on question type
+  const getCorrectAnswerText = (answer: any) => {
+    const question = getQuestionById(answer.questionId);
+    if (!question) return "Question not found";
+
+    switch (question.type) {
+      case "MULTIPLE_CHOICE":
+        const correctOption = question.options?.find((opt) => opt.isCorrect);
+        return correctOption ? correctOption.text : "No correct option found";
+
+      case "FILL_IN_THE_BLANK":
+        return question.correctBlanks
+          ? question.correctBlanks.join(", ")
+          : "No correct blanks defined";
+
+      case "TRUE_FALSE":
+        return question.trueFalseAnswer !== null
+          ? question.trueFalseAnswer
+            ? "True"
+            : "False"
+          : "No true/false answer defined";
+
+      case "PRONUNCIATION":
+        return question.pronunciationText || "No pronunciation text defined";
+
+      default:
+        return "Unknown question type";
+    }
+  };
+
+  // Helper function to get question text
+  const getQuestionText = (questionId: string) => {
+    const question = getQuestionById(questionId);
+    return question ? question.text : "Question not found";
+  };
+
+  // Helper function to get question type
+  const getQuestionType = (questionId: string) => {
+    const question = getQuestionById(questionId);
+    return question ? question.type : "Unknown";
+  };
+
+  // Helper function to get question explanation
+  const getQuestionExplanation = (questionId: string) => {
+    const question = getQuestionById(questionId);
+    return question ? question.explanation : null;
+  };
+
+  // Helper function to get question image
+  const getQuestionImage = (questionId: string) => {
+    const question = getQuestionById(questionId);
+    return question ? question.imageUrl : null;
+  };
+
+  // Helper function to get question audio
+  const getQuestionAudio = (questionId: string) => {
+    const question = getQuestionById(questionId);
+    return question ? question.audioUrl : null;
   };
 
   if (isLoading) {
@@ -291,10 +348,10 @@ export default function CreatorAttemptDetailPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">
-                        {attemptDetail.userName}
+                        {attemptDetail.user?.name || "Unknown User"}
                       </h3>
                       <p className="text-sm text-gray-600">
-                        {attemptDetail.userEmail}
+                        {attemptDetail.user?.email || "No email provided"}
                       </p>
                     </div>
                   </div>
@@ -304,7 +361,9 @@ export default function CreatorAttemptDetailPage() {
                       <Award className="h-4 w-4 text-green-600" />
                       <span>
                         {attemptDetail.correctAnswers}/
-                        {attemptDetail.totalQuestions} correct
+                        {attemptDetail.totalQuestions ||
+                          attemptDetail.answers.length}{" "}
+                        correct
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -370,32 +429,35 @@ export default function CreatorAttemptDetailPage() {
           <CardContent>
             <Accordion type="single" collapsible className="w-full">
               {attemptDetail.answers.map((answer, index) => (
-                <AccordionItem key={answer.questionId} value={`item-${index}`}>
+                <AccordionItem key={answer.id} value={`item-${index}`}>
                   <AccordionTrigger className="text-left">
                     <div className="flex items-center space-x-3 w-full">
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                          answer.isCorrect ? "bg-green-500" : "bg-red-500"
+                          answer.correct ? "bg-green-500" : "bg-red-500"
                         }`}
                       >
-                        {answer.isCorrect ? "✓" : "✗"}
+                        {answer.correct ? "✓" : "✗"}
                       </div>
                       <div className="flex-1 text-left">
                         <span className="font-medium">
                           Question {index + 1}
                         </span>
                         <p className="text-sm text-gray-600 mt-1">
-                          {answer.questionText}
+                          {getQuestionText(answer.questionId)}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Type: {getQuestionType(answer.questionId)}
                         </p>
                       </div>
                       <div className="text-right">
                         <Badge
-                          variant={answer.isCorrect ? "default" : "destructive"}
+                          variant={answer.correct ? "default" : "destructive"}
                         >
-                          {answer.isCorrect ? "Correct" : "Incorrect"}
+                          {answer.correct ? "Correct" : "Incorrect"}
                         </Badge>
                         <div className="text-xs text-gray-500 mt-1">
-                          {formatTime(answer.timeSpent)}
+                          {formatTime(answer.timeTaken)}
                         </div>
                       </div>
                     </div>
@@ -405,13 +467,16 @@ export default function CreatorAttemptDetailPage() {
                       {/* Question Media */}
                       <div className="space-y-3">
                         {/* Question Image */}
-                        {answer.questionImage && (
+                        {getQuestionImage(answer.questionId) && (
                           <div>
                             <h4 className="font-medium text-gray-800 mb-2">
                               Question Image:
                             </h4>
                             <img
-                              src={answer.questionImage || "/placeholder.svg"}
+                              src={
+                                getQuestionImage(answer.questionId) ||
+                                "/placeholder.svg"
+                              }
                               alt="Question visual aid"
                               className="max-w-full h-auto rounded-lg border shadow-sm max-h-48"
                               onError={(e) =>
@@ -423,91 +488,73 @@ export default function CreatorAttemptDetailPage() {
                         )}
 
                         {/* Question Audio */}
-                        {answer.questionAudio && (
+                        {getQuestionAudio(answer.questionId) && (
                           <div>
                             <h4 className="font-medium text-gray-800 mb-2">
                               Question Audio:
                             </h4>
                             <AudioPreview
-                              audioUrl={answer.questionAudio}
+                              audioUrl={getQuestionAudio(answer.questionId)!}
                               compact
                             />
                           </div>
                         )}
                       </div>
 
-                      {answer.questionType === "pronunciation" ? (
-                        <div className="space-y-4">
-                          {/* Audio Controls */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <Card className="border-blue-200 bg-blue-50">
-                              <CardContent className="p-4">
-                                <h4 className="font-medium text-blue-800 mb-3">
-                                  Student's Pronunciation
-                                </h4>
-                                {answer.audioUrl && (
-                                  <AudioPreview
-                                    audioUrl={answer.audioUrl}
-                                    compact
-                                  />
-                                )}
-                              </CardContent>
-                            </Card>
-
-                            <Card className="border-green-200 bg-green-50">
-                              <CardContent className="p-4">
-                                <h4 className="font-medium text-green-800 mb-3">
-                                  Correct Pronunciation
-                                </h4>
-                                {answer.correctAudioUrl && (
-                                  <AudioPreview
-                                    audioUrl={answer.correctAudioUrl}
-                                    compact
-                                  />
-                                )}
-                              </CardContent>
-                            </Card>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div
-                            className={`p-4 rounded-lg border ${
-                              answer.isCorrect
-                                ? "bg-green-50 border-green-200"
-                                : "bg-red-50 border-red-200"
+                      {/* Answer Details */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div
+                          className={`p-4 rounded-lg border ${
+                            answer.correct
+                              ? "bg-green-50 border-green-200"
+                              : "bg-red-50 border-red-200"
+                          }`}
+                        >
+                          <p className="font-medium text-sm mb-2">
+                            Student's Answer:
+                          </p>
+                          <p
+                            className={`font-mono ${
+                              answer.correct ? "text-green-700" : "text-red-700"
                             }`}
                           >
-                            <p className="font-medium text-sm mb-2">
-                              Student's Answer:
+                            {getUserAnswerText(answer)}
+                          </p>
+                          {answer.scoreAchieved !== undefined && (
+                            <p className="text-sm text-gray-600 mt-2">
+                              Score: {answer.scoreAchieved}
                             </p>
-                            <p
-                              className={`font-mono ${
-                                answer.isCorrect
-                                  ? "text-green-700"
-                                  : "text-red-700"
-                              }`}
-                            >
-                              {answer.userAnswer || "No answer provided"}
-                            </p>
-                          </div>
-                          <div className="p-4 rounded-lg bg-green-50 border border-green-200">
-                            <p className="font-medium text-sm mb-2">
-                              Correct Answer:
-                            </p>
-                            <p className="text-green-700 font-mono">
-                              {answer.correctAnswer}
-                            </p>
-                          </div>
+                          )}
+                        </div>
+                        <div className="p-4 rounded-lg bg-green-50 border border-green-200">
+                          <p className="font-medium text-sm mb-2">
+                            Correct Answer:
+                          </p>
+                          <p className="text-green-700 font-mono">
+                            {getCorrectAnswerText(answer)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Audio if available */}
+                      {answer.audioUrl && (
+                        <div>
+                          <h4 className="font-medium text-gray-800 mb-2">
+                            Student's Audio Answer:
+                          </h4>
+                          <AudioPreview audioUrl={answer.audioUrl} compact />
                         </div>
                       )}
 
-                      {answer.explanation && (
+                      {/* Question Explanation */}
+                      {getQuestionExplanation(answer.questionId) && (
                         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                           <p className="font-medium text-sm mb-2">
                             Explanation:
                           </p>
-                          <p className="text-blue-700">{answer.explanation}</p>
+                          <p className="text-blue-700">
+                            {getQuestionExplanation(answer.questionId)}
+                          </p>
                         </div>
                       )}
                     </div>

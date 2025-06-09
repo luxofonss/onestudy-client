@@ -133,7 +133,7 @@ export default function AuthPage() {
         });
       }
 
-      if (result.meta.code === SUCCESS_CODE) {
+      if (result?.meta?.code === SUCCESS_CODE) {
         toast({
           title: "Success!",
           description: isLogin
@@ -148,11 +148,12 @@ export default function AuthPage() {
           variant: "destructive",
           title: "Error",
           description:
-            result.error ||
+            result.meta.message ||
             `${isLogin ? "Login" : "Registration"} failed. Please try again.`,
         });
       }
     } catch (error) {
+      console.log("error:: ", error);
       toast({
         variant: "destructive",
         title: "Network Error",

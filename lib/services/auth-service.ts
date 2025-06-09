@@ -58,9 +58,10 @@ class AuthService {
     } catch (error) {
       console.log("failed to login")
       return {
-        success: false,
-        error: error instanceof Error ? error.message : "Login failed",
-        timestamp: new Date().toISOString(),
+        meta: {
+          code: 400,
+          message: error instanceof Error ? error.message : "Login failed",
+        }
       }
     }
   }

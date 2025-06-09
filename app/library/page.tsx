@@ -25,7 +25,7 @@ const LoadingSkeleton = dynamic(
 
 type TabValue = "public" | "saved" | "my";
 
-const LibraryPage: React.FC = () => {
+export default function LibraryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabValue>(
@@ -317,6 +317,4 @@ const LibraryPage: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default withAuth(LibraryPage);
+}

@@ -27,8 +27,9 @@ import { Plus, BookOpen, Users, Trophy, TrendingUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { quizService } from "@/lib/services/quiz-service";
 import { SUCCESS_CODE } from "@/lib/constants";
+import { withAuth } from "@/lib/hooks/with-auth";
 
-export default function CreatePage() {
+function CreatePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -251,3 +252,5 @@ export default function CreatePage() {
     </div>
   );
 }
+
+export default withAuth(CreatePage);

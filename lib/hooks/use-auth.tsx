@@ -67,7 +67,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await authService.login(username, password);
       console.log("login response", response);
 
+      if (response.meta.code !== SUCCESS_CODE) {
+        return response;
+      }
       const user = await authService.getMe();
+      console.log("user:: ", user);
       if (user.meta.code === SUCCESS_CODE && user.data) {
         setUser(user.data);
       }

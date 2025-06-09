@@ -54,9 +54,6 @@ export function Header() {
       .toUpperCase();
   };
 
-  console.log("isAuthenticated", isAuthenticated);
-  console.log("user", user);
-
   return (
     <header className="bg-white/80 backdrop-blur-sm border-b border-purple-100 sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">

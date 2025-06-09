@@ -106,7 +106,7 @@ export default function HomePage() {
 
               {/* CTA Buttons */}
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/create">
+                <Link href="/library?tab=public">
                   <Button
                     size="lg"
                     className="bg-white text-purple-600 hover:bg-purple-50 px-8 py-4 text-lg font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg"
@@ -115,7 +115,7 @@ export default function HomePage() {
                     Start Learning Free
                   </Button>
                 </Link>
-                <Link href="/library">
+                <Link href="/library?tab=public">
                   <Button
                     size="lg"
                     variant="outline"
@@ -381,7 +381,7 @@ export default function HomePage() {
               skills with OneStudy
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/auth">
+              <Link href="/library?tab=public">
                 <Button
                   size="lg"
                   className="bg-white text-purple-600 hover:bg-purple-50 px-8 py-4 text-lg font-semibold transform hover:scale-105 transition-all duration-200"
@@ -389,7 +389,7 @@ export default function HomePage() {
                   Get Started Free
                 </Button>
               </Link>
-              <Link href="/create">
+              <Link href="/library?tab=public">
                 <Button
                   size="lg"
                   variant="outline"

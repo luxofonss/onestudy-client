@@ -149,6 +149,7 @@ export interface IQuizAttempt {
   completedAt: string
   answers: IQuizAttemptAnswer[]
   passed: boolean
+  quiz: IQuiz
 }
 
 export interface IQuizFilters {
