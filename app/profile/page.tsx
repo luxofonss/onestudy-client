@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Mail,
   Calendar,
@@ -19,6 +19,7 @@ import {
   Activity,
   Users,
   CheckCircle,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,148 +41,150 @@ import { StatsGrid } from "@/components/ui/stats-grid";
 import { StatsCard } from "@/components/ui/stats-card";
 import Link from "next/link";
 import { withAuth } from "@/lib/hooks/with-auth";
+import { userService } from "@/lib/services/user-service";
+import { quizService } from "@/lib/services/quiz-service";
+import { authService } from "@/lib/services/auth-service";
+import { useToast } from "@/hooks/use-toast";
+import type { IUser, IUserStats } from "@/lib/types/api-types";
+import { SUCCESS_CODE } from "@/lib/constants";
+
+interface QuizAttempt {
+  id: string;
+  quizId: string;
+  userId: string;
+  score: number;
+  totalQuestions: number | null;
+  correctAnswers: number;
+  timeSpent: number;
+  completedAt: string | null;
+  passed: boolean;
+  quiz: {
+    id: string;
+    title: string;
+    description: string;
+    category: string | null;
+    difficulty: string | null;
+  };
+}
+
+interface QuizWithAttempts {
+  id: string;
+  title: string;
+  description: string;
+  category: string | null;
+  difficulty: string | null;
+  questionCount: number;
+  tags: string[];
+  passingScore: number;
+  maxAttempts: number;
+  hasTimer: boolean;
+  timeLimit: number;
+  quizAttempts: QuizAttempt[];
+}
 
 function ProfilePage() {
+  const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
-  const [userInfo, setUserInfo] = useState({
-    name: "Alex Johnson",
-    email: "alex.johnson@email.com",
-    bio: "Passionate English learner and educator. I love creating interactive content to help others improve their language skills.",
-    location: "San Francisco, CA",
-    joinDate: "January 2024",
-    avatar: "/placeholder.svg",
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // User data
+  const [user, setUser] = useState<IUser | null>(null);
+  const [userStats, setUserStats] = useState<IUserStats | null>(null);
+  const [quizHistory, setQuizHistory] = useState<QuizWithAttempts[]>([]);
+
+  // Edit form state
+  const [editedInfo, setEditedInfo] = useState({
+    name: "",
+    email: "",
   });
 
-  const [editedInfo, setEditedInfo] = useState(userInfo);
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
-  const handleSave = () => {
-    setUserInfo(editedInfo);
-    setIsEditing(false);
+  const fetchUserData = async () => {
+    try {
+      setIsLoading(true);
+
+      // Fetch user profile
+      const userResponse = await authService.getMe();
+      if (userResponse.meta?.code === SUCCESS_CODE && userResponse.data) {
+        setUser(userResponse.data);
+        setEditedInfo({
+          name: userResponse.data.name,
+          email: userResponse.data.email,
+        });
+      }
+
+      // Fetch user stats
+      if (userResponse.data?.id) {
+        const statsResponse = await userService.getUserStats(
+          userResponse.data.id
+        );
+        if (statsResponse.meta?.code === SUCCESS_CODE && statsResponse.data) {
+          setUserStats(statsResponse.data);
+        }
+      }
+
+      // Fetch quiz history
+      const quizResponse = await quizService.getMyQuizAttempts();
+      if (quizResponse.data) {
+        // TODO
+        // setQuizHistory(quizResponse.data);
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load profile data. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!user) return;
+
+    try {
+      setIsSaving(true);
+      const response = await userService.updateProfile({
+        name: editedInfo.name,
+        email: editedInfo.email,
+      });
+
+      if (response.meta?.code === SUCCESS_CODE && response.data) {
+        setUser(response.data);
+        setIsEditing(false);
+        toast({
+          title: "Profile Updated",
+          description: "Your profile has been successfully updated.",
+        });
+      } else {
+        throw new Error(response.meta?.message || "Update failed");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        variant: "destructive",
+        title: "Update Failed",
+        description: "Failed to update profile. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
-    setEditedInfo(userInfo);
+    if (user) {
+      setEditedInfo({
+        name: user.name,
+        email: user.email,
+      });
+    }
     setIsEditing(false);
-  };
-
-  // Mock user stats
-  const userStats = {
-    totalQuizzes: 47,
-    averageScore: 85,
-    totalTime: "24h 30m",
-    streak: 12,
-    contentCreated: 8,
-    totalLearners: 1247,
-    averageRating: 4.7,
-    hoursLearned: 156,
-  };
-
-  // Mock quiz history
-  const recentQuizzes = [
-    {
-      id: 1,
-      title: "Advanced Grammar Quiz",
-      score: 92,
-      date: "2024-01-15",
-      status: "completed",
-      timeSpent: "15 min",
-    },
-    {
-      id: 2,
-      title: "Business Vocabulary Test",
-      score: 78,
-      date: "2024-01-14",
-      status: "completed",
-      timeSpent: "22 min",
-    },
-    {
-      id: 3,
-      title: "Pronunciation Challenge",
-      score: 88,
-      date: "2024-01-13",
-      status: "completed",
-      timeSpent: "18 min",
-    },
-    {
-      id: 4,
-      title: "Listening Comprehension",
-      score: 95,
-      date: "2024-01-12",
-      status: "completed",
-      timeSpent: "25 min",
-    },
-  ];
-
-  // Mock achievements
-  const achievements = [
-    {
-      id: 1,
-      title: "Quiz Master",
-      description: "Completed 50+ quizzes",
-      icon: Trophy,
-      earned: true,
-      date: "2024-01-10",
-    },
-    {
-      id: 2,
-      title: "Perfect Score",
-      description: "Achieved 100% on a quiz",
-      icon: Target,
-      earned: true,
-      date: "2024-01-08",
-    },
-    {
-      id: 3,
-      title: "Speed Learner",
-      description: "Completed a quiz in under 10 minutes",
-      icon: Clock,
-      earned: true,
-      date: "2024-01-05",
-    },
-    {
-      id: 4,
-      title: "Consistent Learner",
-      description: "Maintain a 30-day streak",
-      icon: Calendar,
-      earned: false,
-      date: null,
-    },
-    {
-      id: 5,
-      title: "Content Creator",
-      description: "Create 10+ quizzes",
-      icon: BookOpen,
-      earned: false,
-      date: null,
-    },
-    {
-      id: 6,
-      title: "Community Helper",
-      description: "Help 100+ learners",
-      icon: Users,
-      earned: false,
-      date: null,
-    },
-  ];
-
-  // Mock analytics data
-  const analyticsData = {
-    weeklyProgress: [
-      { day: "Mon", quizzes: 3, score: 85 },
-      { day: "Tue", quizzes: 2, score: 92 },
-      { day: "Wed", quizzes: 4, score: 78 },
-      { day: "Thu", quizzes: 1, score: 95 },
-      { day: "Fri", quizzes: 3, score: 88 },
-      { day: "Sat", quizzes: 2, score: 90 },
-      { day: "Sun", quizzes: 1, score: 87 },
-    ],
-    categoryPerformance: [
-      { category: "Grammar", score: 88, quizzes: 15 },
-      { category: "Vocabulary", score: 92, quizzes: 12 },
-      { category: "Pronunciation", score: 75, quizzes: 8 },
-      { category: "Listening", score: 85, quizzes: 10 },
-      { category: "Reading", score: 90, quizzes: 2 },
-    ],
   };
 
   const getScoreColor = (score: number) => {
@@ -191,13 +194,115 @@ function ProfilePage() {
     return "text-red-600";
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  };
+
+  // Get recent quiz attempts from all quizzes
+  const getRecentQuizzes = () => {
+    const allAttempts: QuizAttempt[] = [];
+    quizHistory.forEach((quiz) => {
+      quiz.quizAttempts.forEach((attempt) => {
+        if (attempt.completedAt) {
+          allAttempts.push(attempt);
+        }
+      });
+    });
+
+    return allAttempts
+      .sort(
+        (a, b) =>
+          new Date(b.completedAt!).getTime() -
+          new Date(a.completedAt!).getTime()
+      )
+      .slice(0, 4);
+  };
+
+  // Calculate analytics data
+  const getAnalyticsData = () => {
+    const allAttempts = quizHistory.flatMap((quiz) => quiz.quizAttempts);
+    const completedAttempts = allAttempts.filter(
+      (attempt) => attempt.completedAt
+    );
+
+    // Category performance
+    const categoryMap = new Map<
+      string,
+      { total: number; score: number; count: number }
+    >();
+    completedAttempts.forEach((attempt) => {
+      const category = attempt.quiz?.category || "General";
+      const existing = categoryMap.get(category) || {
+        total: 0,
+        score: 0,
+        count: 0,
+      };
+      categoryMap.set(category, {
+        total: existing.total + attempt.score,
+        score: existing.score + attempt.score,
+        count: existing.count + 1,
+      });
+    });
+
+    const categoryPerformance = Array.from(categoryMap.entries()).map(
+      ([category, data]) => ({
+        category,
+        score: Math.round(data.total / data.count),
+        quizzes: data.count,
+      })
+    );
+
+    return { categoryPerformance };
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 animate-fade-in">
+        <div className="flex justify-center items-center h-64">
+          <div className="flex items-center space-x-2">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span>Loading profile...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-8 animate-fade-in">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Profile Not Found
+            </h3>
+            <p className="text-gray-600">
+              Unable to load your profile information.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const recentQuizzes = getRecentQuizzes();
+  const analyticsData = getAnalyticsData();
+
   return (
     <div className="container mx-auto px-4 py-8 animate-fade-in">
-      <PageHeader
-        title="My Profile"
-        description="Manage your account and track your learning progress"
-      />
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Profile Info Sidebar */}
         <div className="lg:col-span-1 space-y-6">
@@ -206,36 +311,46 @@ function ProfilePage() {
             <CardHeader className="text-center">
               <Avatar className="w-24 h-24 mx-auto mb-4">
                 <AvatarImage
-                  src={userInfo.avatar || "/placeholder.svg"}
-                  alt={userInfo.name}
+                  src={user.avatar || "/placeholder.svg"}
+                  alt={user.name}
                 />
                 <AvatarFallback className="bg-blue-100 text-blue-600 text-2xl">
-                  {userInfo.name
-                    .split(" ")
+                  {user?.name
+                    ?.split(" ")
                     .map((n) => n[0])
                     .join("")}
                 </AvatarFallback>
               </Avatar>
               {!isEditing ? (
                 <div>
-                  <CardTitle className="text-2xl mb-2">
-                    {userInfo.name}
-                  </CardTitle>
+                  <CardTitle className="text-2xl mb-2">{user.name}</CardTitle>
                   <CardDescription className="text-base mb-4">
-                    {userInfo.bio}
+                    {user.username} • {user.role}
                   </CardDescription>
                   <div className="space-y-2 text-sm text-gray-600">
                     <div className="flex items-center justify-center">
                       <Mail className="h-4 w-4 mr-2" />
-                      {userInfo.email}
-                    </div>
-                    <div className="flex items-center justify-center">
-                      <MapPin className="h-4 w-4 mr-2" />
-                      {userInfo.location}
+                      {user.email}
                     </div>
                     <div className="flex items-center justify-center">
                       <Calendar className="h-4 w-4 mr-2" />
-                      Joined {userInfo.joinDate}
+                      Joined {formatDate(user.joinedAt)}
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <Badge
+                        variant="outline"
+                        className="border-blue-200 text-blue-700"
+                      >
+                        {user.role}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <Badge
+                        variant="outline"
+                        className="border-green-200 text-green-700"
+                      >
+                        Level: {user.level}
+                      </Badge>
                     </div>
                   </div>
                   <Button
@@ -271,41 +386,24 @@ function ProfilePage() {
                       className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="location">Location</Label>
-                    <Input
-                      id="location"
-                      value={editedInfo.location}
-                      onChange={(e) =>
-                        setEditedInfo({
-                          ...editedInfo,
-                          location: e.target.value,
-                        })
-                      }
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="bio">Bio</Label>
-                    <Textarea
-                      id="bio"
-                      value={editedInfo.bio}
-                      onChange={(e) =>
-                        setEditedInfo({ ...editedInfo, bio: e.target.value })
-                      }
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                      rows={3}
-                    />
-                  </div>
                   <div className="flex gap-2">
                     <Button
                       onClick={handleSave}
+                      disabled={isSaving}
                       className="bg-green-600 hover:bg-green-700 text-white"
                     >
-                      <Save className="h-4 w-4 mr-2" />
-                      Save
+                      {isSaving ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4 mr-2" />
+                      )}
+                      {isSaving ? "Saving..." : "Save"}
                     </Button>
-                    <Button onClick={handleCancel} variant="outline">
+                    <Button
+                      onClick={handleCancel}
+                      variant="outline"
+                      disabled={isSaving}
+                    >
                       <X className="h-4 w-4 mr-2" />
                       Cancel
                     </Button>
@@ -324,27 +422,39 @@ function ProfilePage() {
               <div className="flex items-center justify-between">
                 <span className="text-gray-600">Current Streak</span>
                 <Badge className="bg-orange-100 text-orange-800">
-                  {userStats.streak} days
+                  {user.streak} days
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Total Quizzes</span>
-                <span className="font-semibold">{userStats.totalQuizzes}</span>
+                <span className="text-gray-600">Points</span>
+                <span className="font-semibold">{user.points}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Average Score</span>
-                <span
-                  className={`font-semibold ${getScoreColor(
-                    userStats.averageScore
-                  )}`}
-                >
-                  {userStats.averageScore}%
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Time Spent</span>
-                <span className="font-semibold">{userStats.totalTime}</span>
-              </div>
+              {userStats && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Total Quizzes</span>
+                    <span className="font-semibold">
+                      {userStats.totalQuizzes}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Average Score</span>
+                    <span
+                      className={`font-semibold ${getScoreColor(
+                        userStats.averageScore
+                      )}`}
+                    >
+                      {userStats.averageScore}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600">Time Spent</span>
+                    <span className="font-semibold">
+                      {formatTime(userStats.totalTime)}
+                    </span>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -381,32 +491,34 @@ function ProfilePage() {
 
             <TabsContent value="overview" className="space-y-6">
               {/* Overview Stats */}
-              <StatsGrid columns={4}>
-                <StatsCard
-                  icon={BookOpen}
-                  value={userStats.contentCreated}
-                  label="Content Created"
-                  color="text-blue-600"
-                />
-                <StatsCard
-                  icon={Users}
-                  value={userStats.totalLearners.toLocaleString()}
-                  label="Total Learners"
-                  color="text-green-600"
-                />
-                <StatsCard
-                  icon={Star}
-                  value={userStats.averageRating.toFixed(1)}
-                  label="Average Rating"
-                  color="text-yellow-600"
-                />
-                <StatsCard
-                  icon={Clock}
-                  value={`${userStats.hoursLearned}h`}
-                  label="Hours Learned"
-                  color="text-purple-600"
-                />
-              </StatsGrid>
+              {userStats && (
+                <StatsGrid columns={4}>
+                  <StatsCard
+                    icon={BookOpen}
+                    value={userStats.contentCreated}
+                    label="Content Created"
+                    color="text-blue-600"
+                  />
+                  <StatsCard
+                    icon={Users}
+                    value={userStats.totalLearners.toLocaleString()}
+                    label="Total Learners"
+                    color="text-green-600"
+                  />
+                  <StatsCard
+                    icon={Star}
+                    value={userStats.averageRating.toFixed(1)}
+                    label="Average Rating"
+                    color="text-yellow-600"
+                  />
+                  <StatsCard
+                    icon={Clock}
+                    value={`${userStats.hoursLearned}h`}
+                    label="Hours Learned"
+                    color="text-purple-600"
+                  />
+                </StatsGrid>
+              )}
 
               {/* Recent Activity */}
               <Card className="border-blue-100">
@@ -418,44 +530,64 @@ function ProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {recentQuizzes.slice(0, 3).map((quiz) => (
-                      <div
-                        key={quiz.id}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                      >
-                        <div>
-                          <h3 className="font-medium text-gray-900">
-                            {quiz.title}
-                          </h3>
-                          <p className="text-sm text-gray-500">
-                            {quiz.date} • {quiz.timeSpent}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <div
-                            className={`text-lg font-bold ${getScoreColor(
-                              quiz.score
-                            )}`}
-                          >
-                            {quiz.score}%
+                    {recentQuizzes.length > 0 ? (
+                      recentQuizzes.map((quiz) => (
+                        <div
+                          key={quiz.id}
+                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                        >
+                          <div>
+                            <h3 className="font-medium text-gray-900">
+                              {quiz.quiz?.title}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              {formatDate(quiz.completedAt!)} •{" "}
+                              {formatTime(quiz.timeSpent)}
+                            </p>
                           </div>
-                          <Badge className="bg-green-100 text-green-800">
-                            Completed
-                          </Badge>
+                          <div className="text-right">
+                            <div
+                              className={`text-lg font-bold ${getScoreColor(
+                                quiz.score
+                              )}`}
+                            >
+                              {quiz.score}%
+                            </div>
+                            <Badge
+                              className={
+                                quiz.passed
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }
+                            >
+                              {quiz.passed ? "Passed" : "Failed"}
+                            </Badge>
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">No quiz attempts yet.</p>
+                        <Link href="/quizzes">
+                          <Button className="mt-2 bg-blue-600 hover:bg-blue-700 text-white">
+                            Start Your First Quiz
+                          </Button>
+                        </Link>
                       </div>
-                    ))}
+                    )}
                   </div>
-                  <div className="mt-4 text-center">
-                    <Link href="/attempted-quizzes">
-                      <Button
-                        variant="outline"
-                        className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                      >
-                        View All Quiz History
-                      </Button>
-                    </Link>
-                  </div>
+                  {recentQuizzes.length > 0 && (
+                    <div className="mt-4 text-center">
+                      <Link href="/attempted-quizzes">
+                        <Button
+                          variant="outline"
+                          className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                        >
+                          View All Quiz History
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -470,154 +602,135 @@ function ProfilePage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {recentQuizzes.map((quiz) => (
-                      <div
-                        key={quiz.id}
-                        className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="font-semibold text-gray-900">
-                              {quiz.title}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Completed on {quiz.date} • Time spent:{" "}
-                              {quiz.timeSpent}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <div
-                              className={`text-2xl font-bold ${getScoreColor(
-                                quiz.score
-                              )}`}
-                            >
-                              {quiz.score}%
+                    {recentQuizzes.length > 0 ? (
+                      recentQuizzes.map((quiz) => (
+                        <div
+                          key={quiz.id}
+                          className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="font-semibold text-gray-900">
+                                {quiz.quiz.title}
+                              </h3>
+                              <p className="text-sm text-gray-600">
+                                Completed on {formatDate(quiz.completedAt!)} •
+                                Time spent: {formatTime(quiz.timeSpent)}
+                              </p>
                             </div>
-                            <Badge className="bg-green-100 text-green-800">
-                              {quiz.status}
-                            </Badge>
+                            <div className="text-right">
+                              <div
+                                className={`text-2xl font-bold ${getScoreColor(
+                                  quiz.score
+                                )}`}
+                              >
+                                {quiz.score}%
+                              </div>
+                              <Badge
+                                className={
+                                  quiz.passed
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }
+                              >
+                                {quiz.passed ? "Passed" : "Failed"}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">No quiz attempts yet.</p>
+                        <Link href="/quizzes">
+                          <Button className="mt-2 bg-blue-600 hover:bg-blue-700 text-white">
+                            Start Your First Quiz
+                          </Button>
+                        </Link>
                       </div>
-                    ))}
+                    )}
                   </div>
-                  <div className="mt-6 text-center">
-                    <Link href="/attempted-quizzes">
-                      <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                        View Complete History
-                      </Button>
-                    </Link>
-                  </div>
+                  {recentQuizzes.length > 0 && (
+                    <div className="mt-6 text-center">
+                      <Link href="/attempted-quizzes">
+                        <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                          View Complete History
+                        </Button>
+                      </Link>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6">
               {/* Performance Overview */}
-              <StatsGrid columns={4}>
-                <StatsCard
-                  icon={Trophy}
-                  value={userStats.totalQuizzes}
-                  label="Total Quizzes"
-                  color="text-blue-600"
-                />
-                <StatsCard
-                  icon={Target}
-                  value={`${userStats.averageScore}%`}
-                  label="Average Score"
-                  color="text-green-600"
-                />
-                <StatsCard
-                  icon={TrendingUp}
-                  value={`${userStats.streak}`}
-                  label="Current Streak"
-                  color="text-orange-600"
-                />
-                <StatsCard
-                  icon={Clock}
-                  value={userStats.totalTime}
-                  label="Total Time"
-                  color="text-purple-600"
-                />
-              </StatsGrid>
+              {userStats && (
+                <StatsGrid columns={4}>
+                  <StatsCard
+                    icon={Trophy}
+                    value={userStats.totalQuizzes}
+                    label="Total Quizzes"
+                    color="text-blue-600"
+                  />
+                  <StatsCard
+                    icon={Target}
+                    value={`${userStats.averageScore}%`}
+                    label="Average Score"
+                    color="text-green-600"
+                  />
+                  <StatsCard
+                    icon={TrendingUp}
+                    value={`${user.streak}`}
+                    label="Current Streak"
+                    color="text-orange-600"
+                  />
+                  <StatsCard
+                    icon={Clock}
+                    value={formatTime(userStats.totalTime)}
+                    label="Total Time"
+                    color="text-purple-600"
+                  />
+                </StatsGrid>
+              )}
 
               {/* Category Performance */}
-              <Card className="border-blue-100">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
-                    Performance by Category
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {analyticsData.categoryPerformance.map((category) => (
-                      <div key={category.category} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium text-gray-700">
-                            {category.category}
-                          </span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-600">
-                              {category.quizzes} quizzes
+              {analyticsData.categoryPerformance.length > 0 && (
+                <Card className="border-blue-100">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
+                      Performance by Category
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {analyticsData.categoryPerformance.map((category) => (
+                        <div key={category.category} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-gray-700">
+                              {category.category}
                             </span>
-                            <span
-                              className={`font-bold ${getScoreColor(
-                                category.score
-                              )}`}
-                            >
-                              {category.score}%
-                            </span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-gray-600">
+                                {category.quizzes} quizzes
+                              </span>
+                              <span
+                                className={`font-bold ${getScoreColor(
+                                  category.score
+                                )}`}
+                              >
+                                {category.score}%
+                              </span>
+                            </div>
                           </div>
+                          <Progress value={category.score} className="h-2" />
                         </div>
-                        <Progress value={category.score} className="h-2" />
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Weekly Progress */}
-              <Card className="border-blue-100">
-                <CardHeader>
-                  <CardTitle>Weekly Progress</CardTitle>
-                  <CardDescription>
-                    Your quiz activity over the past week
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {analyticsData.weeklyProgress.map((day) => (
-                      <div
-                        key={day.day}
-                        className="flex items-center justify-between"
-                      >
-                        <span className="font-medium text-gray-700 w-12">
-                          {day.day}
-                        </span>
-                        <div className="flex items-center space-x-4 flex-1">
-                          <div className="flex-1 bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-blue-600 h-2 rounded-full"
-                              style={{ width: `${(day.quizzes / 5) * 100}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm text-gray-600 w-16">
-                            {day.quizzes} quizzes
-                          </span>
-                          <span
-                            className={`font-medium w-12 ${getScoreColor(
-                              day.score
-                            )}`}
-                          >
-                            {day.score}%
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             <TabsContent value="achievements" className="space-y-6">
@@ -632,73 +745,15 @@ function ProfilePage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {achievements.map((achievement) => {
-                      const IconComponent = achievement.icon;
-                      return (
-                        <div
-                          key={achievement.id}
-                          className={`p-4 rounded-lg border-2 transition-all duration-200 ${
-                            achievement.earned
-                              ? "border-yellow-200 bg-yellow-50 hover:border-yellow-300"
-                              : "border-gray-200 bg-gray-50 opacity-60"
-                          }`}
-                        >
-                          <div className="flex items-start space-x-3">
-                            <div
-                              className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                                achievement.earned
-                                  ? "bg-yellow-100"
-                                  : "bg-gray-200"
-                              }`}
-                            >
-                              <IconComponent
-                                className={`h-6 w-6 ${
-                                  achievement.earned
-                                    ? "text-yellow-600"
-                                    : "text-gray-400"
-                                }`}
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-1">
-                                <h3
-                                  className={`font-semibold ${
-                                    achievement.earned
-                                      ? "text-gray-900"
-                                      : "text-gray-500"
-                                  }`}
-                                >
-                                  {achievement.title}
-                                </h3>
-                                {achievement.earned && (
-                                  <CheckCircle className="h-4 w-4 text-green-600" />
-                                )}
-                              </div>
-                              <p
-                                className={`text-sm ${
-                                  achievement.earned
-                                    ? "text-gray-600"
-                                    : "text-gray-400"
-                                } mb-2`}
-                              >
-                                {achievement.description}
-                              </p>
-                              {achievement.earned && achievement.date && (
-                                <p className="text-xs text-yellow-600 font-medium">
-                                  Earned on {achievement.date}
-                                </p>
-                              )}
-                              {!achievement.earned && (
-                                <p className="text-xs text-gray-400">
-                                  Not yet earned
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="text-center py-8">
+                    <Award className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Achievements Coming Soon
+                    </h3>
+                    <p className="text-gray-600">
+                      We're working on an achievement system to celebrate your
+                      learning milestones.
+                    </p>
                   </div>
                 </CardContent>
               </Card>

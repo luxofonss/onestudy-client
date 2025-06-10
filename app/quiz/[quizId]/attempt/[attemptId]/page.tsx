@@ -37,6 +37,7 @@ import { resourceService } from "@/lib/services/resource-service";
 // import type { IQuiz } from "@/lib/types/interfaces";
 import { SUCCESS_CODE } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
+import { ListeningQuestion } from "@/components/quiz/ListeningQuestion";
 
 // --- API and State Interfaces ---
 
@@ -347,8 +348,6 @@ export default function QuizAttemptPage() {
   const [hasRecorded, setHasRecorded] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
 
-  const [isListening, setIsListening] = useState(false); // For listening question type
-  const [listeningTime, setListeningTime] = useState(0);
   const [hasListened, setHasListened] = useState(false);
 
   const [quizAnswers, setQuizAnswers] = useState<QuizAnswers>({});
@@ -364,11 +363,10 @@ export default function QuizAttemptPage() {
   const [content, setContent] = useState<IQuizState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const questionNavRef = useRef<HTMLDivElement>(null);
+  const questionNavRef = useRef<HTMLDivElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null); // Renamed from timerRef
-  const listeningTimerRef = useRef<NodeJS.Timeout | null>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null); // Renamed from audioRef
   const quizTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -577,7 +575,6 @@ export default function QuizAttemptPage() {
     setHasRecorded(false);
     setRecordingTime(0);
     setHasListened(false);
-    setListeningTime(0);
     if (audioPlayerRef.current) {
       audioPlayerRef.current.pause();
       audioPlayerRef.current.src = "";
@@ -631,7 +628,30 @@ export default function QuizAttemptPage() {
             setHasRecorded(true); // Mark as recorded if URL exists
           }
           break;
-        // LISTENING type would load its specific state if any (e.g., selected option after listening)
+        case "LISTENING":
+          // For listening questions, we don't need to restore audio state
+          // but we should restore the selected answer if any
+          if (
+            savedQuizAnswer.selectedOptions &&
+            savedQuizAnswer.selectedOptions.length > 0
+          ) {
+            const optionIdToLoad = savedQuizAnswer.selectedOptions[0];
+            const option = currentQDetails.options?.find(
+              (opt) => opt.id === optionIdToLoad
+            );
+            if (option) {
+              setSelectedAnswer(option.text);
+              setSelectedOptionId(option.id);
+            }
+          }
+          // Mark as listened if there's a saved answer
+          if (
+            savedQuizAnswer.answer !== null &&
+            savedQuizAnswer.answer !== ""
+          ) {
+            setHasListened(true);
+          }
+          break;
       }
     }
   };
@@ -701,7 +721,6 @@ export default function QuizAttemptPage() {
   useEffect(() => {
     return () => {
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-      if (listeningTimerRef.current) clearInterval(listeningTimerRef.current);
       if (quizTimerRef.current) clearInterval(quizTimerRef.current);
       if (
         mediaRecorderRef.current &&
@@ -778,7 +797,7 @@ export default function QuizAttemptPage() {
       case "PRONUNCIATION":
         return hasRecorded;
       case "LISTENING":
-        return selectedOptionId !== "" && hasListened; // Assuming listening leads to MC
+        return selectedOptionId !== "" && hasListened; // Must have listened AND selected an answer
       default:
         return true; // For unknown types or types without specific validation here
     }
@@ -1429,6 +1448,20 @@ export default function QuizAttemptPage() {
                   )}
               </div>
             </div>
+          )}
+
+          {currentQState.type === "LISTENING" && (
+            <ListeningQuestion
+              question={currentQState.question}
+              audioUrl={currentQState.audioUrl || null}
+              maxListeningTime={currentQState.maxListeningTime}
+              options={currentQState.options}
+              selectedOptionId={selectedOptionId}
+              onOptionSelect={handleMultipleChoiceChange}
+              hasListened={hasListened}
+              onListeningStateChange={setHasListened}
+              formatTime={formatTime}
+            />
           )}
         </CardContent>
       </Card>

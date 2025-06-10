@@ -17,7 +17,7 @@ export function PageHeader({
     <div className={`mb-6 ${className}`}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold mb-1 bg-gradient-to-r from-white to-purple-200 bg-clip-text">
+          <h1 className="text-xl font-bold mb-1 bg-gradient-to-r from-white to-purple-200 bg-clip-text">
             {title}
           </h1>
           {description && (
