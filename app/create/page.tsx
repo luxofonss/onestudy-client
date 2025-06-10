@@ -110,35 +110,35 @@ function CreatePage() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <h1 className="text-4xl font-bold mb-4">Create Your Quiz</h1>
+        <h1 className="text-3xl font-bold mb-4">Create Your Quiz</h1>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
           <Card className="text-center">
             <CardContent className="pt-6">
               <BookOpen className="h-8 w-8 mx-auto mb-2 text-blue-600" />
-              <div className="text-2xl font-bold">500+</div>
+              <div className="text-xl font-bold">500+</div>
               <p className="text-sm text-muted-foreground">Quizzes Created</p>
             </CardContent>
           </Card>
           <Card className="text-center">
             <CardContent className="pt-6">
               <Users className="h-8 w-8 mx-auto mb-2 text-green-600" />
-              <div className="text-2xl font-bold">10K+</div>
+              <div className="text-xl font-bold">10K+</div>
               <p className="text-sm text-muted-foreground">Students Engaged</p>
             </CardContent>
           </Card>
           <Card className="text-center">
             <CardContent className="pt-6">
               <Trophy className="h-8 w-8 mx-auto mb-2 text-yellow-600" />
-              <div className="text-2xl font-bold">95%</div>
+              <div className="text-xl font-bold">95%</div>
               <p className="text-sm text-muted-foreground">Completion Rate</p>
             </CardContent>
           </Card>
           <Card className="text-center">
             <CardContent className="pt-6">
               <TrendingUp className="h-8 w-8 mx-auto mb-2 text-purple-600" />
-              <div className="text-2xl font-bold">4.8</div>
+              <div className="text-xl font-bold">4.8</div>
               <p className="text-sm text-muted-foreground">Average Rating</p>
             </CardContent>
           </Card>

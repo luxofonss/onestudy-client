@@ -16,6 +16,9 @@ import {
   CheckCircle,
   Globe,
   Star,
+  Microchip,
+  MicroscopeIcon,
+  Mic,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { quizService } from "@/lib/services/quiz-service";
@@ -97,10 +100,11 @@ export default function HomePage() {
                     Interactive Learning
                   </span>
                 </h1>
-                <p className="text-xl md:text-2xl text-purple-100 leading-relaxed max-w-2xl">
-                  Improve your English skills through engaging lessons,
-                  pronunciation practice, and personalized feedback. Join
-                  thousands of learners worldwide.
+                <p className="text-lg md:text-xl text-purple-100 leading-relaxed max-w-2xl">
+                  Enhance your English skills with fun, personalized quizzes
+                  focused on pronunciation, listening, and reading
+                  comprehension. Create your own quizzes or explore our growing
+                  library — all designed to boost fluency and confidence.
                 </p>
               </div>
 
@@ -112,17 +116,17 @@ export default function HomePage() {
                     className="bg-white text-purple-600 hover:bg-purple-50 px-8 py-4 text-lg font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg"
                   >
                     <Play className="h-5 w-5 mr-2" />
-                    Start Learning Free
+                    Start Quizzes
                   </Button>
                 </Link>
-                <Link href="/library?tab=public">
+                <Link href="/pronunciation-test">
                   <Button
                     size="lg"
                     variant="outline"
                     className="bg-white text-purple-600 hover:bg-purple-50 px-8 py-4 text-lg font-semibold transform hover:scale-105 transition-all duration-200 shadow-lg"
                   >
-                    <BookOpen className="h-5 w-5 mr-2" />
-                    Browse Lessons
+                    <Mic className="h-5 w-5 mr-2" />
+                    Pronunciation Test
                   </Button>
                 </Link>
               </div>
@@ -131,11 +135,11 @@ export default function HomePage() {
               <div className="flex items-center space-x-8 text-purple-100">
                 <div className="flex items-center space-x-2">
                   <CheckCircle className="h-5 w-5 text-green-400" />
-                  <span className="text-sm">No Credit Card Required</span>
+                  <span className="text-sm">Create & Share Custom Quizzes</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Globe className="h-5 w-5 text-purple-300" />
-                  <span className="text-sm">Available Worldwide</span>
+                  <span className="text-sm">Learn Anytime, Anywhere</span>
                 </div>
               </div>
             </div>
@@ -191,29 +195,15 @@ export default function HomePage() {
       </section>
 
       <div className="container mx-auto px-4 py-16 space-y-20">
-        {/* Search Section */}
-        <section className="max-w-2xl mx-auto text-center space-y-6">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Find Your Perfect Lesson
-          </h2>
-          <p className="text-gray-600">
-            Search through thousands of interactive English lessons
-          </p>
-          <SearchInput
-            placeholder="Search lessons, grammar topics, vocabulary..."
-            onChange={(value) => console.log("Search:", value)}
-          />
-        </section>
-
         {/* Featured Lessons */}
         <section className="space-y-12">
           <div className="text-center space-y-4">
-            <h2 className="text-4xl font-bold text-gray-900">
-              Featured Lessons
+            <h2 className="text-3xl font-bold text-gray-800">
+              Quizzes Library
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Start your English learning journey with our most popular and
-              effective lessons
+              effective quizzes
             </p>
           </div>
 
@@ -267,10 +257,10 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
               <div className="space-y-4">
-                <h2 className="text-4xl font-bold text-gray-900">
+                <h2 className="text-3xl font-bold text-gray-800">
                   Why Choose OneStudy?
                 </h2>
-                <p className="text-xl text-gray-600">
+                <p className="text-lg text-gray-600">
                   Experience the most effective way to learn English with our
                   innovative platform
                 </p>
@@ -282,7 +272,7 @@ export default function HomePage() {
                     <BookOpen className="h-6 w-6 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
                       Interactive Lessons
                     </h3>
                     <p className="text-gray-600">
@@ -297,7 +287,7 @@ export default function HomePage() {
                     <Users className="h-6 w-6 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
                       Global Community
                     </h3>
                     <p className="text-gray-600">
@@ -312,7 +302,7 @@ export default function HomePage() {
                     <TrendingUp className="h-6 w-6 text-indigo-600" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
                       Track Progress
                     </h3>
                     <p className="text-gray-600">
@@ -338,10 +328,10 @@ export default function HomePage() {
         {/* Learning Stats */}
         <section className="bg-white rounded-3xl p-8 md:p-16 shadow-lg border border-gray-100">
           <div className="text-center mb-12 space-y-4">
-            <h2 className="text-4xl font-bold text-gray-900">
+            <h2 className="text-3xl font-bold text-gray-900">
               Join Our Learning Community
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Thousands of students are already improving their English skills
               with our interactive platform
             </p>
@@ -373,7 +363,7 @@ export default function HomePage() {
         {/* CTA Section */}
         <section className="text-center bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl p-8 md:p-16 text-white">
           <div className="max-w-3xl mx-auto space-y-8">
-            <h2 className="text-4xl md:text-5xl font-bold">
+            <h2 className="text-3xl md:text-5xl font-bold">
               Ready to Start Your English Journey?
             </h2>
             <p className="text-xl text-purple-100">
@@ -389,13 +379,13 @@ export default function HomePage() {
                   Get Started Free
                 </Button>
               </Link>
-              <Link href="/library?tab=public">
+              <Link href="/pronunciation-test">
                 <Button
                   size="lg"
                   variant="outline"
                   className="bg-white text-purple-600 hover:bg-purple-50 px-8 py-4 text-lg font-semibold transform hover:scale-105 transition-all duration-200"
                 >
-                  Try a Lesson
+                  Try Pronunciation Test
                 </Button>
               </Link>
             </div>

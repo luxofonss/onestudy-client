@@ -2278,42 +2278,6 @@ function CreateTestPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl animate-fade-in">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">
-          {testData.status === "published" ? "Edit Quiz" : "Create Quiz"}
-        </h1>
-        <div className="flex items-center justify-center mt-2 space-x-4">
-          {testData.status && (
-            <Badge
-              variant={
-                testData.status === "published" ? "default" : "secondary"
-              }
-              className={
-                testData.status === "published"
-                  ? "bg-green-100 text-green-800"
-                  : "bg-yellow-100 text-yellow-800"
-              }
-            >
-              {testData.status === "published" ? "Published" : "Draft"}
-            </Badge>
-          )}
-          {/* Auto-save indicator */}
-          {isSaving && (
-            <div className="flex items-center text-sm text-gray-500">
-              <Clock className="h-4 w-4 mr-1 animate-spin" />
-              Saving...
-            </div>
-          )}
-          {lastSaved && !isSaving && (
-            <div className="flex items-center text-sm text-green-600">
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Last saved: {lastSaved.toLocaleTimeString()}
-            </div>
-          )}
-        </div>
-      </div>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-8">
           <TabsTrigger value="settings" className="flex items-center space-x-2">
@@ -2643,28 +2607,28 @@ function CreateTestPage() {
                 <CardHeader>
                   <CardTitle className="text-lg">Test Overview</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Questions</span>
-                    <span className="font-semibold">
+                    <span className="text-sm text-gray-600">Questions</span>
+                    <span className="text-sm font-semibold">
                       {testData.questions.length}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Total Points</span>
-                    <span className="font-semibold">
+                    <span className="text-sm text-gray-600">Total Points</span>
+                    <span className="text-sm font-semibold">
                       {testData.totalPoints}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Est. Duration</span>
-                    <span className="font-semibold">
+                    <span className="text-sm text-gray-600">Est. Duration</span>
+                    <span className="text-sm font-semibold">
                       {testData.estimatedDuration} min
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Avg. Points</span>
-                    <span className="font-semibold">
+                    <span className="text-sm text-gray-600">Avg. Points</span>
+                    <span className="text-sm font-semibold">
                       {testData.questions.length > 0
                         ? (
                             testData.totalPoints / testData.questions.length
@@ -2673,8 +2637,8 @@ function CreateTestPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Navigation</span>
-                    <span className="font-semibold text-xs">
+                    <span className="text-sm text-gray-600">Navigation</span>
+                    <span className="text-sm font-semibold">
                       {testData.navigationMode === "sequential"
                         ? "Sequential"
                         : testData.navigationMode === "back-only"
@@ -2683,8 +2647,8 @@ function CreateTestPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Timer</span>
-                    <span className="font-semibold">
+                    <span className="text-sm text-gray-600">Timer</span>
+                    <span className="text-sm font-semibold">
                       {testData.hasTimer ? `${testData.timeLimit}m` : "None"}
                     </span>
                   </div>
@@ -2810,7 +2774,7 @@ function CreateTestPage() {
               <Card className="border-gray-200">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle className="text-xl text-gray-800">
+                    <CardTitle className="text-lg text-gray-800">
                       Questions ({testData.questions.length})
                     </CardTitle>
                     <p className="text-sm text-gray-500 mt-1">

@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useParams, useRouter } from "next/navigation";
 import { quizService } from "@/lib/services/quiz-service";
+import { resourceService } from "@/lib/services/resource-service";
 // Assuming IQuiz is defined in interfaces, if not, it should be.
 // import type { IQuiz } from "@/lib/types/interfaces";
 import { SUCCESS_CODE } from "@/lib/constants";
@@ -472,27 +473,15 @@ export default function QuizAttemptPage() {
       // Ensure you have a QuestionType for "TRUE_FALSE"
       submitBodyForService.userAnswerTrueFalse = answerValue as boolean;
     } else if (questionType === "PRONUNCIATION") {
-      if (answerValue instanceof Blob) {
-        // CRITICAL: Pronunciation audio (Blob) needs to be uploaded to a server first
-        // to get an audioUrl. The current quizService.submitQuizAttemptQuestion expects an audioUrl.
-        // This part of the code needs an intermediate step:
-        // 1. Call a service to upload `answerValue` (Blob).
-        // 2. That service returns an `uploadedAudioUrl`.
-        // 3. Set `submitBodyForService.audioUrl = uploadedAudioUrl;`
-        // For this fix, we'll highlight that this call will likely not work as intended for new audio
-        // unless quizService itself handles Blob uploads from this payload, which is unlikely for a JSON API.
+      if (typeof answerValue === "string") {
+        // answerValue is now the audio URL from the upload
+        submitBodyForService.audioUrl = answerValue;
+      } else if (answerValue instanceof Blob) {
+        // This should not happen anymore since we upload before calling saveAnswer
         console.warn(
-          "Pronunciation Blob needs an upload step before sending to quizService."
+          "Pronunciation Blob should be uploaded before calling saveAnswer"
         );
-        // To prevent errors, you might return early or skip sending audioUrl if it's a new blob
-        // until the upload logic is in place.
-        // For now, `submitBodyForService.audioUrl` will remain null for a new Blob.
-      } else if (
-        typeof answerValue === "string" &&
-        answerValue.startsWith("blob:")
-      ) {
-        // This might be a previously recorded local blob URL, not a server URL.
-        // Also needs proper handling.
+        return;
       }
     }
 
@@ -503,7 +492,7 @@ export default function QuizAttemptPage() {
       answer:
         questionType === "MULTIPLE_CHOICE"
           ? metadata?.mcOptionText // Store the selected option's text for UI display in quizAnswers
-          : answerValue, // For MC, answerValue is optionId; for FIB, string[]; for Pron, Blob
+          : answerValue, // For MC, answerValue is optionId; for FIB, string[]; for Pron, audio URL
       timeSpent: timeSpentOnQuestion,
       timestamp: new Date().toISOString(),
       // Store the option ID(s) for MC
@@ -519,30 +508,15 @@ export default function QuizAttemptPage() {
         questionType === "TRUE_FALSE" // Store the boolean value for True/False
           ? (answerValue as boolean)
           : undefined,
-      // audioUrl for a *new* recording (Blob) should be undefined in local state until uploaded.
-      // If answerValue is a Blob, it means it's a new local recording.
-      // If quizAnswers[questionId]?.audioUrl exists, it's from a previous server save.
+      // Store audio URL for pronunciation questions
       audioUrl:
-        answerValue instanceof Blob
-          ? undefined
+        questionType === "PRONUNCIATION" && typeof answerValue === "string"
+          ? answerValue
           : quizAnswers[questionId]?.audioUrl,
       // 'correct' and 'scoreAchieved' will be updated upon receiving response from server
     };
     setQuizAnswers((prev) => ({ ...prev, [questionId]: newQuizAnswerEntry }));
     setQuestionStartTime(Date.now()); // Reset start time for the next interaction
-
-    // If it's a pronunciation blob, and no upload step is implemented yet,
-    // you might want to avoid calling the service or call a specific upload service.
-    if (questionType === "PRONUNCIATION" && answerValue instanceof Blob) {
-      toast({
-        title: "Audio Recorded",
-        description:
-          "Audio saved locally. Submission of audio requires server integration.",
-      });
-      // TODO: Implement actual blob upload here.
-      // For now, we return to prevent sending a payload that the current service cannot handle for the Blob.
-      return;
-    }
 
     try {
       const response = await quizService.submitQuizAttemptQuestion(
@@ -841,9 +815,41 @@ export default function QuizAttemptPage() {
           if (recordingTimerRef.current)
             clearInterval(recordingTimerRef.current);
 
-          const currentQ = content?.questions[currentQuestion];
-          if (currentQ) {
-            await saveAnswer(currentQ.id, newAudioBlob, currentQ.type);
+          // Upload the recorded audio blob
+          try {
+            // Convert blob to File object for upload
+            const audioFile = new File([newAudioBlob], "recording.wav", {
+              type: "audio/wav",
+            });
+
+            // Upload the audio file
+            const uploadResult = await resourceService.uploadFile(audioFile);
+
+            if (uploadResult.meta?.code === SUCCESS_CODE && uploadResult.data) {
+              const audioUrl = uploadResult.data.url;
+
+              // Now submit the question with the audio URL
+              const currentQ = content?.questions[currentQuestion];
+              if (currentQ) {
+                await saveAnswer(currentQ.id, audioUrl, currentQ.type);
+              }
+
+              toast({
+                title: "Audio uploaded successfully",
+                description:
+                  "Your pronunciation has been recorded and submitted.",
+              });
+            } else {
+              throw new Error(uploadResult.meta?.message || "Upload failed");
+            }
+          } catch (uploadError) {
+            console.error("Error uploading audio:", uploadError);
+            toast({
+              variant: "destructive",
+              title: "Upload failed",
+              description:
+                "Failed to upload audio recording. Please try again.",
+            });
           }
         };
 
@@ -883,6 +889,7 @@ export default function QuizAttemptPage() {
   };
 
   const playRecording = () => {
+    // First, try to play the local audio blob (for preview before upload)
     if (audioBlob) {
       const audioUrl = URL.createObjectURL(audioBlob);
       if (audioPlayerRef.current) {
@@ -890,12 +897,25 @@ export default function QuizAttemptPage() {
         audioPlayerRef.current.play();
         audioPlayerRef.current.onended = () => URL.revokeObjectURL(audioUrl);
       }
-    } else {
-      toast({
-        title: "No Recording",
-        description: "There is no recording to play.",
-      });
+      return;
     }
+
+    // If no local blob, try to play the uploaded audio URL
+    const currentQ = content?.questions[currentQuestion];
+    if (currentQ && quizAnswers[currentQ.id]?.audioUrl) {
+      const uploadedAudioUrl = quizAnswers[currentQ.id].audioUrl;
+      if (audioPlayerRef.current && uploadedAudioUrl) {
+        audioPlayerRef.current.src = uploadedAudioUrl;
+        audioPlayerRef.current.play();
+      }
+      return;
+    }
+
+    // If neither local blob nor uploaded URL exists
+    toast({
+      title: "No Recording",
+      description: "There is no recording to play.",
+    });
   };
 
   const handleNext = async () => {
@@ -1329,7 +1349,7 @@ export default function QuizAttemptPage() {
                 <h3 className="font-medium text-indigo-800 mb-2">
                   Text to pronounce:
                 </h3>
-                <p className="text-2xl font-semibold text-indigo-900 mb-1 leading-relaxed">
+                <p className="text-xl font-semibold text-indigo-900 mb-1 leading-relaxed">
                   {currentQState.pronunciationText}
                 </p>
               </div>
@@ -1368,7 +1388,7 @@ export default function QuizAttemptPage() {
                     </Button>
                   )}
                   {hasRecorded &&
-                    audioBlob && ( // Only show play/re-record if there's a blob
+                    (audioBlob || quizAnswers[currentQState.id]?.audioUrl) && ( // Show play button if there's a blob OR uploaded URL
                       <>
                         <Button
                           onClick={playRecording}
@@ -1377,17 +1397,19 @@ export default function QuizAttemptPage() {
                         >
                           <Play className="h-5 w-5 mr-2" /> Play
                         </Button>
-                        <Button
-                          onClick={() => {
-                            setHasRecorded(false);
-                            setAudioBlob(null);
-                            setRecordingTime(0);
-                          }}
-                          variant="outline"
-                          className="border-gray-500 text-gray-600 hover:bg-gray-100 px-5 py-3"
-                        >
-                          <RotateCcw className="h-5 w-5 mr-2" /> Re-record
-                        </Button>
+                        {audioBlob && ( // Only show re-record if there's a local blob
+                          <Button
+                            onClick={() => {
+                              setHasRecorded(false);
+                              setAudioBlob(null);
+                              setRecordingTime(0);
+                            }}
+                            variant="outline"
+                            className="border-gray-500 text-gray-600 hover:bg-gray-100 px-5 py-3"
+                          >
+                            <RotateCcw className="h-5 w-5 mr-2" /> Re-record
+                          </Button>
+                        )}
                       </>
                     )}
                 </div>
@@ -1401,9 +1423,8 @@ export default function QuizAttemptPage() {
                   !audioBlob &&
                   quizAnswers[currentQState.id]?.audioUrl && ( // Previously submitted, has URL
                     <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-                      ⓘ You have a previously submitted recording for this
-                      question. Re-record to replace it.
-                      {/* Optionally allow playing the quizAnswers[currentQState.id]?.audioUrl here */}
+                      ✓ Recording submitted. You can play it back or record a
+                      new one to replace it.
                     </div>
                   )}
               </div>
