@@ -1,22 +1,25 @@
-"use client"
+"use client";
 
-import { Moon, Sun } from "lucide-react"
-import { useTheme } from "next-themes"
-import { Button } from "@/components/ui/button"
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { Button } from "@/components/ui/button";
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme()
+  const { theme, setTheme } = useTheme();
 
   return (
     <Button
       variant="ghost"
-      size="sm"
+      size="icon"
       onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-      className="relative w-12 h-12 rounded-full bg-gradient-to-br from-blue-400/20 to-purple-500/20 dark:from-blue-600/30 dark:to-purple-700/30 border border-white/20 dark:border-white/10 backdrop-blur-sm shadow-[inset_0_2px_4px_rgba(255,255,255,0.3),0_8px_32px_rgba(0,0,0,0.1)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),0_8px_32px_rgba(0,0,0,0.3)] hover:shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),0_12px_40px_rgba(0,0,0,0.15)] dark:hover:shadow-[inset_0_2px_4px_rgba(255,255,255,0.15),0_12px_40px_rgba(0,0,0,0.4)] transition-all duration-300"
+      className="relative w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500/10 to-purple-600/10 dark:from-indigo-500/20 dark:to-purple-600/20 border border-white/10 backdrop-blur-sm hover:from-indigo-500/20 hover:to-purple-600/20 dark:hover:from-indigo-500/30 dark:hover:to-purple-600/30 transition-all duration-300"
+      aria-label="Toggle theme"
     >
-      <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0 text-amber-500" />
-      <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100 text-blue-400" />
-      <span className="sr-only">Toggle theme</span>
+      <div className="absolute inset-0 rounded-full overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-600/5 dark:from-indigo-500/10 dark:to-purple-600/10 backdrop-blur-sm"></div>
+      </div>
+      <Sun className="h-5 w-5 rotate-0 scale-100 transition-all duration-300 dark:-rotate-90 dark:scale-0 text-amber-500" />
+      <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all duration-300 dark:rotate-0 dark:scale-100 text-blue-400" />
     </Button>
-  )
+  );
 }

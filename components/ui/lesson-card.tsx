@@ -58,15 +58,15 @@ export function LessonCard({
   const getLevelColor = (level: string) => {
     switch (level) {
       case "Beginner":
-        return "bg-green-100 text-green-800";
+        return "bg-green-500/20 text-green-400 border-green-500/30";
       case "Intermediate":
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
       case "Advanced":
-        return "bg-red-100 text-red-800";
+        return "bg-red-500/20 text-red-400 border-red-500/30";
       case "All Levels":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-500/20 text-gray-400 border-gray-500/30";
     }
   };
 
@@ -86,17 +86,17 @@ export function LessonCard({
 
   return (
     <Card
-      className={`hover:shadow-lg transition-all duration-200 border-blue-100 hover:border-blue-300 group ${className}`}
+      className={`card-glass-dark hover-glow-border transition-all duration-300 group ${className}`}
     >
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex items-start space-x-3 flex-1">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-              <IconComponent className="h-6 w-6 text-blue-600" />
+            <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center group-hover:bg-purple-500/30 transition-colors">
+              <IconComponent className="h-6 w-6 text-purple-400" />
             </div>
             <div className="flex-1">
               <div className="flex items-start justify-between">
-                <CardTitle className="text-xl mb-2 group-hover:text-blue-600 transition-colors">
+                <CardTitle className="text-xl mb-2 text-white group-hover:text-purple-400 transition-colors">
                   {title}
                 </CardTitle>
                 {showSaveButton && onSave && typeof id === "string" && (
@@ -104,40 +104,40 @@ export function LessonCard({
                     variant="ghost"
                     size="sm"
                     onClick={handleSave}
-                    className="shrink-0 h-8 w-8 p-0 hover:bg-blue-500/20 hover:text-blue-600 ml-2"
+                    className="shrink-0 h-8 w-8 p-0 hover:bg-purple-500/20 hover:text-purple-400 ml-2"
                     aria-label={isSaved ? "Remove from saved" : "Save lesson"}
                   >
                     {isSaved ? (
-                      <BookmarkCheck className="h-4 w-4 text-blue-600" />
+                      <BookmarkCheck className="h-4 w-4 text-purple-400" />
                     ) : (
-                      <Bookmark className="h-4 w-4" />
+                      <Bookmark className="h-4 w-4 text-gray-400" />
                     )}
                   </Button>
                 )}
               </div>
-              <CardDescription className="text-gray-600 mb-3">
+              <CardDescription className="text-gray-400 mb-3">
                 {description}
               </CardDescription>
             </div>
           </div>
-          <Badge variant="secondary" className={getLevelColor(level)}>
+          <Badge variant="outline" className={getLevelColor(level)}>
             {level}
           </Badge>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-sm text-gray-500 mb-3">
-          <span className="font-medium text-gray-700">Created by:</span>{" "}
+        <div className="text-sm text-gray-400 mb-3">
+          <span className="font-medium text-gray-300">Created by:</span>{" "}
           {creator}
         </div>
-        <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
+        <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
               <Users className="h-4 w-4 mr-1" />
               {participants?.toLocaleString()}
             </div>
             <div className="flex items-center">
-              <Star className="h-4 w-4 mr-1 fill-yellow-400 text-yellow-400" />
+              <Star className="h-4 w-4 mr-1 fill-amber-400 text-amber-400" />
               {rating}
             </div>
             <div className="flex items-center">
@@ -145,22 +145,23 @@ export function LessonCard({
               {duration}
             </div>
           </div>
-          <Badge variant="outline" className="border-blue-300 text-blue-600">
+          <Badge
+            variant="outline"
+            className="border-purple-500/30 text-purple-400 bg-purple-500/10"
+          >
             {type}
           </Badge>
         </div>
         {onButtonClick ? (
           <Button
             onClick={handleButtonClick}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white transform hover:scale-105 transition-all duration-200"
+            className="w-full gradient-button"
           >
             {buttonText}
           </Button>
         ) : (
           <Link href={href}>
-            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white transform hover:scale-105 transition-all duration-200">
-              {buttonText}
-            </Button>
+            <Button className="w-full gradient-button">{buttonText}</Button>
           </Link>
         )}
       </CardContent>

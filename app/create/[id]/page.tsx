@@ -2384,7 +2384,6 @@ function CreateTestPage() {
                         "Students can navigate freely between all questions"}
                     </p>
                   </div>
-
                   {/* Timer Settings */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -2459,7 +2458,6 @@ function CreateTestPage() {
                       </div>
                     )}
                   </div>
-
                   {/* Question Order */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -2497,7 +2495,6 @@ function CreateTestPage() {
                       />
                     </div>
                   </div>
-
                   {/* Question Picker */}
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
@@ -2516,7 +2513,6 @@ function CreateTestPage() {
                       disabled={testData.navigationMode === "sequential"}
                     />
                   </div>
-
                   {/* Additional Settings */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -2554,8 +2550,7 @@ function CreateTestPage() {
                       />
                     </div>
                   </div>
-
-                  {/* Attempt and Scoring Settings */}
+                  {/* Attempt and Scoring Settings */}SS
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label className="text-gray-700">Maximum Attempts</Label>

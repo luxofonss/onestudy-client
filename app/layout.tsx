@@ -4,10 +4,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
-import { ThemeProvider } from "@/components/theme-provider";
 import { MobileNav } from "@/components/mobile-nav";
 import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider } from "@/lib/hooks/use-auth";
+import { Providers } from "./providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,17 +24,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          <AuthProvider>
-            <div className="flex flex-col min-h-screen">
-              <Header />
-              <main className="flex-1 pb-16 md:pb-0">{children}</main>
-              <Footer />
-              <MobileNav />
-              <Toaster />
-            </div>
-          </AuthProvider>
-        </ThemeProvider>
+        <Providers>
+          <div className="flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-1 pb-16 md:pb-0">{children}</main>
+            <Footer />
+            <MobileNav />
+            <Toaster />
+          </div>
+        </Providers>
       </body>
     </html>
   );
