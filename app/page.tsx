@@ -84,7 +84,7 @@ export default function HomePage() {
   return (
     <div className="animate-fade-in grainy-gradient-bg">
       {/* Modern Hero Section with Gradient Background */}
-      <section className="relative overflow-hidden isolate pt-16 md:pt-24">
+      <section className="relative overflow-hidden isolate pt-12 md:pt-8">
         <div className="container mx-auto px-4 py-16 md:py-24 relative">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Hero Content */}
