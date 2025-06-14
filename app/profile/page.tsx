@@ -188,10 +188,12 @@ function ProfilePage() {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return "text-green-600";
-    if (score >= 80) return "text-blue-600";
-    if (score >= 70) return "text-yellow-600";
-    return "text-red-600";
+    if (score >= 90)
+      return "bg-green-900/40 text-green-300 border-green-700/40";
+    if (score >= 80) return "bg-blue-900/40 text-blue-300 border-blue-700/40";
+    if (score >= 70)
+      return "bg-yellow-900/40 text-yellow-300 border-yellow-700/40";
+    return "bg-red-900/40 text-red-300 border-red-700/40";
   };
 
   const formatDate = (dateString: string) => {
@@ -302,463 +304,541 @@ function ProfilePage() {
   const analyticsData = getAnalyticsData();
 
   return (
-    <div className="container mx-auto px-4 py-8 animate-fade-in">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Profile Info Sidebar */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Profile Card */}
-          <Card className="border-blue-100">
-            <CardHeader className="text-center">
-              <Avatar className="w-24 h-24 mx-auto mb-4">
-                <AvatarImage
-                  src={user.avatar || "/placeholder.svg"}
-                  alt={user.name}
-                />
-                <AvatarFallback className="bg-blue-100 text-blue-600 text-2xl">
-                  {user?.name
-                    ?.split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </AvatarFallback>
-              </Avatar>
-              {!isEditing ? (
-                <div>
-                  <CardTitle className="text-2xl mb-2">{user.name}</CardTitle>
-                  <CardDescription className="text-base mb-4">
-                    {user.username} • {user.role}
-                  </CardDescription>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="flex items-center justify-center">
-                      <Mail className="h-4 w-4 mr-2" />
-                      {user.email}
-                    </div>
-                    <div className="flex items-center justify-center">
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Joined {formatDate(user.joinedAt)}
-                    </div>
-                    <div className="flex items-center justify-center">
-                      <Badge
-                        variant="outline"
-                        className="border-blue-200 text-blue-700"
-                      >
-                        {user.role}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-center">
-                      <Badge
-                        variant="outline"
-                        className="border-green-200 text-green-700"
-                      >
-                        Level: {user.level}
-                      </Badge>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => setIsEditing(true)}
-                    className="mt-4 bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Profile
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 text-gray-100">
+      <div className="container mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Profile Info Sidebar */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Profile Card */}
+            <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+              <CardHeader className="text-center py-4 px-4 border-b border-gray-700/20">
+                <Avatar className="w-20 h-20 mx-auto mb-3 ring-2 ring-blue-500/40 ring-offset-2 ring-offset-gray-900">
+                  <AvatarImage
+                    src={user.avatar || "/placeholder.svg"}
+                    alt={user.name}
+                  />
+                  <AvatarFallback className="bg-blue-900/50 text-blue-200 text-xl">
+                    {user?.name
+                      ?.split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </AvatarFallback>
+                </Avatar>
+                {!isEditing ? (
                   <div>
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={editedInfo.name}
-                      onChange={(e) =>
-                        setEditedInfo({ ...editedInfo, name: e.target.value })
-                      }
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={editedInfo.email}
-                      onChange={(e) =>
-                        setEditedInfo({ ...editedInfo, email: e.target.value })
-                      }
-                      className="border-blue-200 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleSave}
-                      disabled={isSaving}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      {isSaving ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4 mr-2" />
-                      )}
-                      {isSaving ? "Saving..." : "Save"}
-                    </Button>
-                    <Button
-                      onClick={handleCancel}
-                      variant="outline"
-                      disabled={isSaving}
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardHeader>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card className="border-blue-100">
-            <CardHeader>
-              <CardTitle className="text-lg">Quick Stats</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Current Streak</span>
-                <Badge className="bg-orange-100 text-orange-800">
-                  {user.streak} days
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-600">Points</span>
-                <span className="font-semibold">{user.points}</span>
-              </div>
-              {userStats && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Total Quizzes</span>
-                    <span className="font-semibold">
-                      {userStats.totalQuizzes}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Average Score</span>
-                    <span
-                      className={`font-semibold ${getScoreColor(
-                        userStats.averageScore
-                      )}`}
-                    >
-                      {userStats.averageScore}%
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Time Spent</span>
-                    <span className="font-semibold">
-                      {formatTime(userStats.totalTime)}
-                    </span>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content */}
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 bg-blue-50">
-              <TabsTrigger
-                value="overview"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                Overview
-              </TabsTrigger>
-              <TabsTrigger
-                value="quizzes"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                Quiz History
-              </TabsTrigger>
-              <TabsTrigger
-                value="analytics"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                Analytics
-              </TabsTrigger>
-              <TabsTrigger
-                value="achievements"
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                Achievements
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-6">
-              {/* Overview Stats */}
-              {userStats && (
-                <StatsGrid columns={4}>
-                  <StatsCard
-                    icon={BookOpen}
-                    value={userStats.contentCreated}
-                    label="Content Created"
-                    color="text-blue-600"
-                  />
-                  <StatsCard
-                    icon={Users}
-                    value={userStats.totalLearners.toLocaleString()}
-                    label="Total Learners"
-                    color="text-green-600"
-                  />
-                  <StatsCard
-                    icon={Star}
-                    value={userStats.averageRating.toFixed(1)}
-                    label="Average Rating"
-                    color="text-yellow-600"
-                  />
-                  <StatsCard
-                    icon={Clock}
-                    value={`${userStats.hoursLearned}h`}
-                    label="Hours Learned"
-                    color="text-purple-600"
-                  />
-                </StatsGrid>
-              )}
-
-              {/* Recent Activity */}
-              <Card className="border-blue-100">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Activity className="h-5 w-5 mr-2 text-blue-600" />
-                    Recent Activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {recentQuizzes.length > 0 ? (
-                      recentQuizzes.map((quiz) => (
-                        <div
-                          key={quiz.id}
-                          className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                        >
-                          <div>
-                            <h3 className="font-medium text-gray-900">
-                              {quiz.quiz?.title}
-                            </h3>
-                            <p className="text-sm text-gray-500">
-                              {formatDate(quiz.completedAt!)} •{" "}
-                              {formatTime(quiz.timeSpent)}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <div
-                              className={`text-lg font-bold ${getScoreColor(
-                                quiz.score
-                              )}`}
-                            >
-                              {quiz.score}%
-                            </div>
-                            <Badge
-                              className={
-                                quiz.passed
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-red-100 text-red-800"
-                              }
-                            >
-                              {quiz.passed ? "Passed" : "Failed"}
-                            </Badge>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">No quiz attempts yet.</p>
-                        <Link href="/quizzes">
-                          <Button className="mt-2 bg-blue-600 hover:bg-blue-700 text-white">
-                            Start Your First Quiz
-                          </Button>
-                        </Link>
+                    <CardTitle className="text-xl mb-1 text-gray-100">
+                      {user.name}
+                    </CardTitle>
+                    <CardDescription className=" mb-3 text-gray-400">
+                      {user.username} • {user.role}
+                    </CardDescription>
+                    <div className="space-y-1.5  text-gray-400">
+                      <div className="flex items-center justify-center">
+                        <Mail className="h-3.5 w-3.5 mr-1.5 text-blue-400" />
+                        {user.email}
                       </div>
-                    )}
-                  </div>
-                  {recentQuizzes.length > 0 && (
-                    <div className="mt-4 text-center">
-                      <Link href="/attempted-quizzes">
-                        <Button
+                      <div className="flex items-center justify-center">
+                        <Calendar className="h-3.5 w-3.5 mr-1.5 text-green-400" />
+                        Joined {formatDate(user.joinedAt)}
+                      </div>
+                      <div className="flex items-center justify-center gap-2 mt-2">
+                        <Badge
                           variant="outline"
-                          className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                          className="border-blue-700/40 text-blue-300 bg-blue-900/20 "
                         >
-                          View All Quiz History
-                        </Button>
-                      </Link>
+                          {user.role}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="border-green-700/40 text-green-300 bg-green-900/20 "
+                        >
+                          Level: {user.level}
+                        </Badge>
+                      </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    <Button
+                      onClick={() => setIsEditing(true)}
+                      className="mt-3 bg-blue-600/80 hover:bg-blue-600 text-white  h-8"
+                    >
+                      <Edit className="h-3.5 w-3.5 mr-1.5" />
+                      Edit Profile
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="name" className="text-gray-300 ">
+                        Name
+                      </Label>
+                      <Input
+                        id="name"
+                        value={editedInfo.name}
+                        onChange={(e) =>
+                          setEditedInfo({ ...editedInfo, name: e.target.value })
+                        }
+                        className="bg-gray-800/50 border-gray-700/50 text-gray-200  mt-1 h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email" className="text-gray-300 ">
+                        Email
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={editedInfo.email}
+                        onChange={(e) =>
+                          setEditedInfo({
+                            ...editedInfo,
+                            email: e.target.value,
+                          })
+                        }
+                        className="bg-gray-800/50 border-gray-700/50 text-gray-200  mt-1 h-8"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="bg-green-600/80 hover:bg-green-600 text-white  h-8"
+                      >
+                        {isSaving ? (
+                          <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        ) : (
+                          <Save className="h-3.5 w-3.5 mr-1.5" />
+                        )}
+                        {isSaving ? "Saving..." : "Save"}
+                      </Button>
+                      <Button
+                        onClick={handleCancel}
+                        variant="outline"
+                        disabled={isSaving}
+                        className="border-gray-700 text-gray-300 hover:bg-gray-800  h-8"
+                      >
+                        <X className="h-3.5 w-3.5 mr-1.5" />
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardHeader>
+            </Card>
 
-            <TabsContent value="quizzes" className="space-y-6">
-              <Card className="border-blue-100">
-                <CardHeader>
-                  <CardTitle>Quiz History</CardTitle>
-                  <CardDescription>
-                    Your recent quiz attempts and scores
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {recentQuizzes.length > 0 ? (
-                      recentQuizzes.map((quiz) => (
-                        <div
-                          key={quiz.id}
-                          className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50"
-                        >
-                          <div className="flex items-center justify-between">
+            {/* Quick Stats */}
+            <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+              <CardHeader className="py-3 px-4 border-b border-gray-700/20">
+                <CardTitle className=" text-gray-100 flex items-center">
+                  <Activity className="h-4 w-4 mr-2 text-blue-400" />
+                  Quick Stats
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="py-3 px-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 ">Current Streak</span>
+                  <Badge className="bg-orange-900/40 text-orange-300 border-orange-700/40 ">
+                    {user.streak} days
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400 ">Points</span>
+                  <span className="font-medium text-gray-200 ">
+                    {user.points}
+                  </span>
+                </div>
+                {userStats && (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 ">Total Quizzes</span>
+                      <span className="font-medium text-gray-200 ">
+                        {userStats.totalQuizzes}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 ">Average Score</span>
+                      <Badge className={getScoreColor(userStats.averageScore)}>
+                        {userStats.averageScore}%
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 ">Time Spent</span>
+                      <span className="font-medium text-gray-200 ">
+                        {formatTime(userStats.totalTime)}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content */}
+          <div className="lg:col-span-3">
+            <Tabs defaultValue="overview" className="space-y-4">
+              <TabsList className="grid w-full grid-cols-4 bg-gray-800/30 p-0.5 rounded-md">
+                <TabsTrigger
+                  value="overview"
+                  className="data-[state=active]:bg-blue-600/80 data-[state=active]:text-white  py-1.5"
+                >
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger
+                  value="quizzes"
+                  className="data-[state=active]:bg-blue-600/80 data-[state=active]:text-white  py-1.5"
+                >
+                  Quiz History
+                </TabsTrigger>
+                <TabsTrigger
+                  value="analytics"
+                  className="data-[state=active]:bg-blue-600/80 data-[state=active]:text-white  py-1.5"
+                >
+                  Analytics
+                </TabsTrigger>
+                <TabsTrigger
+                  value="achievements"
+                  className="data-[state=active]:bg-blue-600/80 data-[state=active]:text-white  py-1.5"
+                >
+                  Achievements
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="overview" className="space-y-4">
+                {/* Overview Stats */}
+                {userStats && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+                      <CardContent className="p-3 flex items-center">
+                        <div className="bg-blue-900/30 p-2 rounded-full mr-3">
+                          <BookOpen className="h-4 w-4 text-blue-400" />
+                        </div>
+                        <div>
+                          <div className=" font-medium text-gray-200">
+                            {userStats.contentCreated}
+                          </div>
+                          <div className=" text-gray-400">Content Created</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+                      <CardContent className="p-3 flex items-center">
+                        <div className="bg-green-900/30 p-2 rounded-full mr-3">
+                          <Users className="h-4 w-4 text-green-400" />
+                        </div>
+                        <div>
+                          <div className=" font-medium text-gray-200">
+                            {userStats.totalLearners.toLocaleString()}
+                          </div>
+                          <div className=" text-gray-400">Total Learners</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+                      <CardContent className="p-3 flex items-center">
+                        <div className="bg-yellow-900/30 p-2 rounded-full mr-3">
+                          <Star className="h-4 w-4 text-yellow-400" />
+                        </div>
+                        <div>
+                          <div className=" font-medium text-gray-200">
+                            {userStats.averageRating.toFixed(1)}
+                          </div>
+                          <div className=" text-gray-400">Average Rating</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+                      <CardContent className="p-3 flex items-center">
+                        <div className="bg-purple-900/30 p-2 rounded-full mr-3">
+                          <Clock className="h-4 w-4 text-purple-400" />
+                        </div>
+                        <div>
+                          <div className=" font-medium text-gray-200">
+                            {userStats.hoursLearned}h
+                          </div>
+                          <div className=" text-gray-400">Hours Learned</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                {/* Recent Activity */}
+                <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+                  <CardHeader className="py-3 px-4 border-b border-gray-700/20">
+                    <CardTitle className=" text-gray-100 flex items-center">
+                      <Activity className="h-4 w-4 mr-2 text-blue-400" />
+                      Recent Activity
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-3 px-4">
+                    <div className="space-y-2">
+                      {recentQuizzes.length > 0 ? (
+                        recentQuizzes.map((quiz) => (
+                          <div
+                            key={quiz.id}
+                            className="flex items-center justify-between p-2.5 bg-gray-800/40 rounded-md border border-gray-700/30"
+                          >
                             <div>
-                              <h3 className="font-semibold text-gray-900">
-                                {quiz.quiz.title}
+                              <h3 className="font-medium text-gray-200 ">
+                                {quiz.quiz?.title}
                               </h3>
-                              <p className="text-sm text-gray-600">
-                                Completed on {formatDate(quiz.completedAt!)} •
-                                Time spent: {formatTime(quiz.timeSpent)}
+                              <p className=" text-gray-400 mt-0.5">
+                                {formatDate(quiz.completedAt!)} •{" "}
+                                {formatTime(quiz.timeSpent)}
                               </p>
                             </div>
                             <div className="text-right">
-                              <div
-                                className={`text-2xl font-bold ${getScoreColor(
-                                  quiz.score
-                                )}`}
-                              >
-                                {quiz.score}%
+                              <div className="text-base font-bold">
+                                <Badge className={getScoreColor(quiz.score)}>
+                                  {quiz.score}%
+                                </Badge>
                               </div>
                               <Badge
                                 className={
                                   quiz.passed
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-red-100 text-red-800"
+                                    ? "bg-green-900/40 text-green-300 border-green-700/40  mt-1"
+                                    : "bg-red-900/40 text-red-300 border-red-700/40  mt-1"
                                 }
                               >
                                 {quiz.passed ? "Passed" : "Failed"}
                               </Badge>
                             </div>
                           </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-6 bg-gray-800/40 rounded-md border border-gray-700/30">
+                          <p className="text-gray-400 ">
+                            No quiz attempts yet.
+                          </p>
+                          <Link href="/library?tab=public">
+                            <Button className="mt-2 bg-blue-600/80 hover:bg-blue-600 text-white  h-8">
+                              Start Your First Quiz
+                            </Button>
+                          </Link>
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-8">
-                        <p className="text-gray-500">No quiz attempts yet.</p>
-                        <Link href="/quizzes">
-                          <Button className="mt-2 bg-blue-600 hover:bg-blue-700 text-white">
-                            Start Your First Quiz
+                      )}
+                    </div>
+                    {recentQuizzes.length > 0 && (
+                      <div className="mt-3 text-center">
+                        <Link href="/attempted-quizzes">
+                          <Button
+                            variant="outline"
+                            className="border-blue-700/40 text-blue-300 hover:bg-blue-900/20  h-8"
+                          >
+                            View All Quiz History
                           </Button>
                         </Link>
                       </div>
                     )}
-                  </div>
-                  {recentQuizzes.length > 0 && (
-                    <div className="mt-6 text-center">
-                      <Link href="/attempted-quizzes">
-                        <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                          View Complete History
-                        </Button>
-                      </Link>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-            <TabsContent value="analytics" className="space-y-6">
-              {/* Performance Overview */}
-              {userStats && (
-                <StatsGrid columns={4}>
-                  <StatsCard
-                    icon={Trophy}
-                    value={userStats.totalQuizzes}
-                    label="Total Quizzes"
-                    color="text-blue-600"
-                  />
-                  <StatsCard
-                    icon={Target}
-                    value={`${userStats.averageScore}%`}
-                    label="Average Score"
-                    color="text-green-600"
-                  />
-                  <StatsCard
-                    icon={TrendingUp}
-                    value={`${user.streak}`}
-                    label="Current Streak"
-                    color="text-orange-600"
-                  />
-                  <StatsCard
-                    icon={Clock}
-                    value={formatTime(userStats.totalTime)}
-                    label="Total Time"
-                    color="text-purple-600"
-                  />
-                </StatsGrid>
-              )}
-
-              {/* Category Performance */}
-              {analyticsData.categoryPerformance.length > 0 && (
-                <Card className="border-blue-100">
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
-                      Performance by Category
+              <TabsContent value="quizzes" className="space-y-4">
+                <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+                  <CardHeader className="py-3 px-4 border-b border-gray-700/20">
+                    <CardTitle className=" text-gray-100">
+                      Quiz History
                     </CardTitle>
+                    <CardDescription className=" text-gray-400">
+                      Your recent quiz attempts and scores
+                    </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {analyticsData.categoryPerformance.map((category) => (
-                        <div key={category.category} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium text-gray-700">
-                              {category.category}
-                            </span>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm text-gray-600">
-                                {category.quizzes} quizzes
-                              </span>
-                              <span
-                                className={`font-bold ${getScoreColor(
-                                  category.score
-                                )}`}
-                              >
-                                {category.score}%
-                              </span>
+                  <CardContent className="py-3 px-4">
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                      {recentQuizzes.length > 0 ? (
+                        recentQuizzes.map((quiz) => (
+                          <div
+                            key={quiz.id}
+                            className="border border-gray-700/30 bg-gray-800/40 rounded-md p-3 hover:bg-gray-800/60 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h3 className="font-medium text-gray-200 ">
+                                  {quiz.quiz.title}
+                                </h3>
+                                <p className=" text-gray-400 mt-0.5">
+                                  Completed on {formatDate(quiz.completedAt!)} •
+                                  Time spent: {formatTime(quiz.timeSpent)}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-lg font-bold">
+                                  <Badge className={getScoreColor(quiz.score)}>
+                                    {quiz.score}%
+                                  </Badge>
+                                </div>
+                                <Badge
+                                  className={
+                                    quiz.passed
+                                      ? "bg-green-900/40 text-green-300 border-green-700/40  mt-1"
+                                      : "bg-red-900/40 text-red-300 border-red-700/40  mt-1"
+                                  }
+                                >
+                                  {quiz.passed ? "Passed" : "Failed"}
+                                </Badge>
+                              </div>
                             </div>
                           </div>
-                          <Progress value={category.score} className="h-2" />
+                        ))
+                      ) : (
+                        <div className="text-center py-6 bg-gray-800/40 rounded-md border border-gray-700/30">
+                          <p className="text-gray-400 ">
+                            No quiz attempts yet.
+                          </p>
+                          <Link href="/library?tab=public">
+                            <Button className="mt-2 bg-blue-600/80 hover:bg-blue-600 text-white  h-8">
+                              Start Your First Quiz
+                            </Button>
+                          </Link>
                         </div>
-                      ))}
+                      )}
+                    </div>
+                    {recentQuizzes.length > 0 && (
+                      <div className="mt-4 text-center">
+                        <Link href="/attempted-quizzes">
+                          <Button className="bg-blue-600/80 hover:bg-blue-600 text-white  h-8">
+                            View Complete History
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="analytics" className="space-y-4">
+                {/* Performance Overview */}
+                {userStats && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+                      <CardContent className="p-3 flex items-center">
+                        <div className="bg-blue-900/30 p-2 rounded-full mr-3">
+                          <Trophy className="h-4 w-4 text-blue-400" />
+                        </div>
+                        <div>
+                          <div className=" font-medium text-gray-200">
+                            {userStats.totalQuizzes}
+                          </div>
+                          <div className=" text-gray-400">Total Quizzes</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+                      <CardContent className="p-3 flex items-center">
+                        <div className="bg-green-900/30 p-2 rounded-full mr-3">
+                          <Target className="h-4 w-4 text-green-400" />
+                        </div>
+                        <div>
+                          <div className=" font-medium text-gray-200">
+                            {userStats.averageScore}%
+                          </div>
+                          <div className=" text-gray-400">Average Score</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+                      <CardContent className="p-3 flex items-center">
+                        <div className="bg-orange-900/30 p-2 rounded-full mr-3">
+                          <TrendingUp className="h-4 w-4 text-orange-400" />
+                        </div>
+                        <div>
+                          <div className=" font-medium text-gray-200">
+                            {user.streak}
+                          </div>
+                          <div className=" text-gray-400">Current Streak</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+                      <CardContent className="p-3 flex items-center">
+                        <div className="bg-purple-900/30 p-2 rounded-full mr-3">
+                          <Clock className="h-4 w-4 text-purple-400" />
+                        </div>
+                        <div>
+                          <div className=" font-medium text-gray-200">
+                            {formatTime(userStats.totalTime)}
+                          </div>
+                          <div className=" text-gray-400">Total Time</div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                {/* Category Performance */}
+                {analyticsData.categoryPerformance.length > 0 && (
+                  <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+                    <CardHeader className="py-3 px-4 border-b border-gray-700/20">
+                      <CardTitle className=" text-gray-100 flex items-center">
+                        <BarChart3 className="h-4 w-4 mr-2 text-blue-400" />
+                        Performance by Category
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="py-3 px-4">
+                      <div className="space-y-3">
+                        {analyticsData.categoryPerformance.map((category) => (
+                          <div key={category.category} className="space-y-1.5">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium text-gray-300 ">
+                                {category.category}
+                              </span>
+                              <div className="flex items-center space-x-2">
+                                <span className=" text-gray-400">
+                                  {category.quizzes} quizzes
+                                </span>
+                                <Badge
+                                  className={getScoreColor(category.score)}
+                                >
+                                  {category.score}%
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="bg-gray-700/30 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${
+                                  category.score >= 80
+                                    ? "bg-green-500/70"
+                                    : category.score >= 60
+                                    ? "bg-yellow-500/70"
+                                    : "bg-red-500/70"
+                                }`}
+                                style={{ width: `${category.score}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+
+              <TabsContent value="achievements" className="space-y-4">
+                <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+                  <CardHeader className="py-3 px-4 border-b border-gray-700/20">
+                    <CardTitle className=" text-gray-100 flex items-center">
+                      <Award className="h-4 w-4 mr-2 text-yellow-400" />
+                      Achievements
+                    </CardTitle>
+                    <CardDescription className=" text-gray-400">
+                      Track your learning milestones and accomplishments
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="py-6 px-4">
+                    <div className="text-center py-6 bg-gray-800/40 rounded-md border border-gray-700/30">
+                      <Award className="h-10 w-10 text-gray-500 mx-auto mb-3" />
+                      <h3 className="text-base font-medium text-gray-200 mb-1">
+                        Achievements Coming Soon
+                      </h3>
+                      <p className=" text-gray-400 max-w-md mx-auto">
+                        We're working on an achievement system to celebrate your
+                        learning milestones.
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
-              )}
-            </TabsContent>
-
-            <TabsContent value="achievements" className="space-y-6">
-              <Card className="border-blue-100">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Award className="h-5 w-5 mr-2 text-yellow-600" />
-                    Achievements
-                  </CardTitle>
-                  <CardDescription>
-                    Track your learning milestones and accomplishments
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <Award className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Achievements Coming Soon
-                    </h3>
-                    <p className="text-gray-600">
-                      We're working on an achievement system to celebrate your
-                      learning milestones.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
     </div>

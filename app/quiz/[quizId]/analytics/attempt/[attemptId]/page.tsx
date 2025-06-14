@@ -334,97 +334,76 @@ export default function CreatorAttemptDetailPage() {
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-12 gap-3 mb-3">
-          {/* Quiz Overview Card */}
-          <div className="col-span-12 md:col-span-9">
-            <Card className="h-full border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
-              <CardHeader className="py-2.5 px-4 border-b border-gray-700/20">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-base mb-0 text-gray-100 flex items-center gap-2">
-                      <span className="font-medium">
-                        {attemptDetail.quiz.title}
-                      </span>
-                      <Badge
-                        className={`${getScoreColor(
-                          attemptDetail.score
-                        )}  px-1.5 py-0.5`}
-                      >
-                        {attemptDetail.score}%
-                      </Badge>
-                      <Badge
-                        variant={
-                          attemptDetail.passed ? "default" : "destructive"
-                        }
-                        className={
-                          attemptDetail.passed
-                            ? "bg-green-900/40 text-green-300 border-green-700/40 "
-                            : "bg-red-900/40 text-red-300 border-red-700/40 "
-                        }
-                      >
-                        {attemptDetail.passed ? "Passed" : "Failed"}
-                      </Badge>
-                    </CardTitle>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3 ">
-                    <div className="flex items-center gap-1.5 text-gray-300 bg-gray-800/40 px-2 py-1 rounded-md">
-                      <User className="h-3.5 w-3.5 text-purple-400" />
-                      <span className="font-medium">
-                        {attemptDetail.user?.name || "Unknown User"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-gray-300 bg-gray-800/40 px-2 py-1 rounded-md">
-                      <Award className="h-3.5 w-3.5 text-green-400" />
-                      <span>
-                        {attemptDetail.correctAnswers}/
-                        {attemptDetail.totalQuestions ||
-                          attemptDetail.answers.length}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-gray-300 bg-gray-800/40 px-2 py-1 rounded-md">
-                      <Clock className="h-3.5 w-3.5 text-blue-400" />
-                      <span>{formatTime(attemptDetail.timeSpent)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-gray-300 bg-gray-800/40 px-2 py-1 rounded-md">
-                      <Calendar className="h-3.5 w-3.5 text-orange-400" />
-                      <span>{formatDate(attemptDetail.completedAt)}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-          </div>
-
-          {/* Feedback Card */}
-          <div className="col-span-12 md:col-span-3">
-            <Card className="h-full border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
-              <CardHeader className="py-2.5 px-4 border-b border-gray-700/20">
-                <CardTitle className=" text-gray-100 flex items-center gap-2">
-                  <MessageSquare className="h-3.5 w-3.5 text-blue-400" />
-                  <span>Feedback</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3">
-                <div className="space-y-2">
-                  <Textarea
-                    id="comment"
-                    placeholder="Leave feedback for this student..."
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    className="min-h-[70px] bg-gray-800/30 border-gray-700/50 text-gray-200 placeholder:text-gray-500 "
-                  />
-                  <Button
-                    onClick={handleSaveComment}
-                    disabled={isSavingComment}
-                    className="w-full bg-blue-600/80 hover:bg-blue-600 text-white  py-1 h-auto"
+        {/* Main Content Grid */}
+        <div className="mb-2">
+          <Card className="h-full border border-gray-700/30 bg-gray-800/30 backdrop-blur-sm shadow-sm">
+            <CardHeader className="py-2 px-3 border-b border-gray-700/20">
+              <div className="flex items-start justify-between flex-wrap gap-2">
+                <CardTitle className="text-sm text-gray-100 flex items-center gap-2 mb-0 font-medium">
+                  <span>{attemptDetail.quiz.title}</span>
+                  <Badge
+                    className={`${getScoreColor(
+                      attemptDetail.score
+                    )} px-2 py-0.5 text-xs`}
                   >
-                    <MessageSquare className="h-3 w-3 mr-1.5" />
-                    {isSavingComment ? "Saving..." : "Save Comment"}
-                  </Button>
+                    {attemptDetail.score}%
+                  </Badge>
+                  <Badge
+                    variant={attemptDetail.passed ? "default" : "destructive"}
+                    className={`text-xs px-2 py-0.5 ${
+                      attemptDetail.passed
+                        ? "bg-green-900/40 text-green-300 border-green-700/40"
+                        : "bg-red-900/40 text-red-300 border-red-700/40"
+                    }`}
+                  >
+                    {attemptDetail.passed ? "Passed" : "Failed"}
+                  </Badge>
+                </CardTitle>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1 text-xs text-gray-300 bg-gray-800/40 px-2 py-0.5 rounded">
+                    <User className="h-3 w-3 text-purple-400" />
+                    <span>{attemptDetail.user?.name || "Unknown User"}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-gray-300 bg-gray-800/40 px-2 py-0.5 rounded">
+                    <Award className="h-3 w-3 text-green-400" />
+                    <span>
+                      {attemptDetail.correctAnswers}/
+                      {attemptDetail.totalQuestions ||
+                        attemptDetail.answers.length}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-gray-300 bg-gray-800/40 px-2 py-0.5 rounded">
+                    <Clock className="h-3 w-3 text-blue-400" />
+                    <span>{formatTime(attemptDetail.timeSpent)}</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-gray-300 bg-gray-800/40 px-2 py-0.5 rounded">
+                    <Calendar className="h-3 w-3 text-orange-400" />
+                    <span>{formatDate(attemptDetail.completedAt)}</span>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-3 space-y-2">
+              <Textarea
+                id="comment"
+                placeholder="Leave feedback..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                className="min-h-[70px] bg-gray-800/30 border-gray-700/50 text-gray-200 placeholder:text-gray-500 text-sm"
+              />
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSaveComment}
+                  disabled={isSavingComment}
+                  className="justify-end bg-blue-600/80 hover:bg-blue-600 text-white text-sm py-1 h-auto"
+                >
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  {isSavingComment ? "Saving..." : "Save Comment"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Detailed Answers */}
