@@ -108,6 +108,7 @@ interface QuizAttemptDetail {
     audioUrl: string | null;
     answeredAt: string;
     correct: boolean;
+    userAnswerTrueFalse?: boolean;
   }>;
   score: number;
   totalQuestions: number | null;
@@ -198,9 +199,11 @@ export default function CreatorAttemptDetailPage() {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-600 bg-green-50";
-    if (score >= 60) return "text-yellow-600 bg-yellow-50";
-    return "text-red-600 bg-red-50";
+    if (score >= 80)
+      return "bg-green-900/50 text-green-300 border-green-700/50";
+    if (score >= 60)
+      return "bg-yellow-900/50 text-yellow-300 border-yellow-700/50";
+    return "bg-red-900/50 text-red-300 border-red-700/50";
   };
 
   // Helper function to get user answer text based on answer type
@@ -285,11 +288,13 @@ export default function CreatorAttemptDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-32 bg-gray-200 rounded"></div>
-          <div className="h-96 bg-gray-200 rounded"></div>
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 text-gray-100">
+        <div className="container mx-auto px-4 py-8">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-gray-800 rounded w-1/3"></div>
+            <div className="h-32 bg-gray-800 rounded"></div>
+            <div className="h-96 bg-gray-800 rounded"></div>
+          </div>
         </div>
       </div>
     );
@@ -297,266 +302,476 @@ export default function CreatorAttemptDetailPage() {
 
   if (!attemptDetail) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">
-          Attempt not found
-        </h1>
-        <Button onClick={() => router.back()}>Go Back</Button>
+      <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 text-gray-100">
+        <div className="container mx-auto px-4 py-8 text-center">
+          <h1 className="text-2xl font-bold text-gray-100 mb-4">
+            Attempt not found
+          </h1>
+          <Button
+            onClick={() => router.back()}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Go Back
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="mb-6">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 text-gray-100">
+      <div className="container mx-auto px-4 py-4">
+        {/* Header with Back Button */}
+        <div className="mb-3">
           <Button
             variant="ghost"
             onClick={() => router.push(`/quiz/${quizId}/analytics`)}
-            className="mb-4 text-gray-600 hover:text-gray-900"
+            className="mb-2 text-gray-300 hover:text-gray-100 hover:bg-gray-800/50"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Analytics
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            <span className="text-sm">Back to Analytics</span>
           </Button>
+        </div>
 
-          <Card>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-xl mb-2">
-                    Student Attempt Details
-                  </CardTitle>
-                  <p className="text-gray-600">{attemptDetail.quiz.title}</p>
-                </div>
-                <Badge
-                  className={`${getScoreColor(
-                    attemptDetail.score
-                  )} text-lg px-3 py-1`}
-                >
-                  {attemptDetail.score}%
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Student Info */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                      <User className="h-6 w-6 text-purple-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">
-                        {attemptDetail.user?.name || "Unknown User"}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {attemptDetail.user?.email || "No email provided"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Award className="h-4 w-4 text-green-600" />
-                      <span>
-                        {attemptDetail.correctAnswers}/
-                        {attemptDetail.totalQuestions ||
-                          attemptDetail.answers.length}{" "}
-                        correct
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-12 gap-3 mb-3">
+          {/* Quiz Overview Card */}
+          <div className="col-span-12 md:col-span-9">
+            <Card className="h-full border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+              <CardHeader className="py-2.5 px-4 border-b border-gray-700/20">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <CardTitle className="text-base mb-0 text-gray-100 flex items-center gap-2">
+                      <span className="font-medium">
+                        {attemptDetail.quiz.title}
                       </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-blue-600" />
-                      <span>{formatTime(attemptDetail.timeSpent)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-purple-600" />
-                      <span>{formatDate(attemptDetail.completedAt)}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {attemptDetail.passed ? (
-                        <CheckCircle className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-red-600" />
-                      )}
-                      <span
+                      <Badge
+                        className={`${getScoreColor(
+                          attemptDetail.score
+                        )}  px-1.5 py-0.5`}
+                      >
+                        {attemptDetail.score}%
+                      </Badge>
+                      <Badge
+                        variant={
+                          attemptDetail.passed ? "default" : "destructive"
+                        }
                         className={
                           attemptDetail.passed
-                            ? "text-green-600"
-                            : "text-red-600"
+                            ? "bg-green-900/40 text-green-300 border-green-700/40 "
+                            : "bg-red-900/40 text-red-300 border-red-700/40 "
                         }
                       >
                         {attemptDetail.passed ? "Passed" : "Failed"}
+                      </Badge>
+                    </CardTitle>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 ">
+                    <div className="flex items-center gap-1.5 text-gray-300 bg-gray-800/40 px-2 py-1 rounded-md">
+                      <User className="h-3.5 w-3.5 text-purple-400" />
+                      <span className="font-medium">
+                        {attemptDetail.user?.name || "Unknown User"}
                       </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-gray-300 bg-gray-800/40 px-2 py-1 rounded-md">
+                      <Award className="h-3.5 w-3.5 text-green-400" />
+                      <span>
+                        {attemptDetail.correctAnswers}/
+                        {attemptDetail.totalQuestions ||
+                          attemptDetail.answers.length}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-gray-300 bg-gray-800/40 px-2 py-1 rounded-md">
+                      <Clock className="h-3.5 w-3.5 text-blue-400" />
+                      <span>{formatTime(attemptDetail.timeSpent)}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-gray-300 bg-gray-800/40 px-2 py-1 rounded-md">
+                      <Calendar className="h-3.5 w-3.5 text-orange-400" />
+                      <span>{formatDate(attemptDetail.completedAt)}</span>
                     </div>
                   </div>
                 </div>
+              </CardHeader>
+            </Card>
+          </div>
 
-                {/* Comment Section */}
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="comment" className="text-sm font-medium">
-                      Your Comment for Student
-                    </Label>
-                    <Textarea
-                      id="comment"
-                      placeholder="Leave feedback for this student..."
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      className="mt-2 min-h-[100px]"
-                    />
-                  </div>
+          {/* Feedback Card */}
+          <div className="col-span-12 md:col-span-3">
+            <Card className="h-full border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+              <CardHeader className="py-2.5 px-4 border-b border-gray-700/20">
+                <CardTitle className=" text-gray-100 flex items-center gap-2">
+                  <MessageSquare className="h-3.5 w-3.5 text-blue-400" />
+                  <span>Feedback</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3">
+                <div className="space-y-2">
+                  <Textarea
+                    id="comment"
+                    placeholder="Leave feedback for this student..."
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    className="min-h-[70px] bg-gray-800/30 border-gray-700/50 text-gray-200 placeholder:text-gray-500 "
+                  />
                   <Button
                     onClick={handleSaveComment}
                     disabled={isSavingComment}
-                    className="w-full"
+                    className="w-full bg-blue-600/80 hover:bg-blue-600 text-white  py-1 h-auto"
                   >
-                    <MessageSquare className="h-4 w-4 mr-2" />
+                    <MessageSquare className="h-3 w-3 mr-1.5" />
                     {isSavingComment ? "Saving..." : "Save Comment"}
                   </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Detailed Answers */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Question-by-Question Analysis</CardTitle>
+        <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+          <CardHeader className="border-b border-gray-700/20 py-2.5 px-4">
+            <CardTitle className="text-sm text-gray-100 flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-400" />
+              Question-by-Question Analysis
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-2">
             <Accordion type="single" collapsible className="w-full">
               {attemptDetail.answers.map((answer, index) => (
-                <AccordionItem key={answer.id} value={`item-${index}`}>
-                  <AccordionTrigger className="text-left">
+                <AccordionItem
+                  key={answer.id}
+                  value={`item-${index}`}
+                  className="border-gray-700/30 mb-1 last:mb-0"
+                >
+                  <AccordionTrigger className="text-left py-2 px-3 hover:bg-gray-800/30 rounded-md">
                     <div className="flex items-center space-x-3 w-full">
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${
-                          answer.correct ? "bg-green-500" : "bg-red-500"
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-white font-bold ${
+                          answer.correct ? "bg-green-500/70" : "bg-red-500/70"
                         }`}
                       >
                         {answer.correct ? "✓" : "✗"}
                       </div>
                       <div className="flex-1 text-left">
-                        <span className="font-medium">
-                          Question {index + 1}
+                        <span className="font-medium text-gray-200 text-sm">
+                          Q{index + 1}
                         </span>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className=" text-gray-400 mt-0.5 line-clamp-1">
                           {getQuestionText(answer.questionId)}
                         </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Type: {getQuestionType(answer.questionId)}
-                        </p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex flex-col items-end">
                         <Badge
                           variant={answer.correct ? "default" : "destructive"}
+                          className={
+                            answer.correct
+                              ? "bg-green-900/40 text-green-300 border-green-700/40 "
+                              : "bg-red-900/40 text-red-300 border-red-700/40 "
+                          }
                         >
                           {answer.correct ? "Correct" : "Incorrect"}
                         </Badge>
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className=" text-gray-500 mt-1 flex items-center">
+                          <Clock className="h-3 w-3 mr-1 inline" />
                           {formatTime(answer.timeTaken)}
                         </div>
                       </div>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="pt-4 space-y-4">
-                      {/* Question Media */}
-                      <div className="space-y-3">
-                        {/* Question Image */}
-                        {getQuestionImage(answer.questionId) && (
-                          <div>
-                            <h4 className="font-medium text-gray-800 mb-2">
-                              Question Image:
-                            </h4>
-                            <img
-                              src={
-                                getQuestionImage(answer.questionId) ||
-                                "/placeholder.svg"
-                              }
-                              alt="Question visual aid"
-                              className="max-w-full h-auto rounded-lg border shadow-sm max-h-48"
-                              onError={(e) =>
-                                (e.currentTarget.src =
-                                  "https://placehold.co/600x400/eee/ccc?text=Image+Not+Found")
-                              }
-                            />
-                          </div>
-                        )}
-
-                        {/* Question Audio */}
-                        {getQuestionAudio(answer.questionId) && (
-                          <div>
-                            <h4 className="font-medium text-gray-800 mb-2">
-                              Question Audio:
-                            </h4>
-                            <AudioPreview
-                              audioUrl={getQuestionAudio(answer.questionId)!}
-                              compact
-                            />
-                          </div>
-                        )}
+                  <AccordionContent className="px-3 pt-2 pb-3 bg-gray-800/10 rounded-md mt-1">
+                    <div className="pt-1 space-y-3">
+                      {/* Question Text */}
+                      <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                        <h4 className="font-medium text-gray-300  mb-1.5">
+                          Question:
+                        </h4>
+                        <p className="text-gray-200 text-sm">
+                          {getQuestionText(answer.questionId)}
+                        </p>
                       </div>
 
-                      {/* Answer Details */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div
-                          className={`p-4 rounded-lg border ${
-                            answer.correct
-                              ? "bg-green-50 border-green-200"
-                              : "bg-red-50 border-red-200"
-                          }`}
-                        >
-                          <p className="font-medium text-sm mb-2">
-                            Student's Answer:
-                          </p>
-                          <p
-                            className={`font-mono ${
-                              answer.correct ? "text-green-700" : "text-red-700"
-                            }`}
-                          >
-                            {getUserAnswerText(answer)}
-                          </p>
-                          {answer.scoreAchieved !== undefined && (
-                            <p className="text-sm text-gray-600 mt-2">
-                              Score: {answer.scoreAchieved}
-                            </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {/* Question Media - Left Column */}
+                        <div className="space-y-3">
+                          {/* Question Image */}
+                          {getQuestionImage(answer.questionId) && (
+                            <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                              <h4 className="font-medium text-gray-300  mb-1.5">
+                                Question Image:
+                              </h4>
+                              <img
+                                src={
+                                  getQuestionImage(answer.questionId) ||
+                                  "/placeholder.svg"
+                                }
+                                alt="Question visual aid"
+                                className="max-w-full h-auto rounded-md border border-gray-700/30 shadow-sm max-h-40"
+                                onError={(e) =>
+                                  (e.currentTarget.src =
+                                    "https://placehold.co/600x400/1f2937/475569?text=Image+Not+Found")
+                                }
+                              />
+                            </div>
+                          )}
+
+                          {/* Question Audio */}
+                          {getQuestionAudio(answer.questionId) && (
+                            <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                              <h4 className="font-medium text-gray-300  mb-1.5">
+                                Question Audio:
+                              </h4>
+                              <AudioPreview
+                                audioUrl={getQuestionAudio(answer.questionId)!}
+                                compact
+                              />
+                            </div>
+                          )}
+
+                          {/* Answer Details */}
+                          <div className="grid grid-cols-1 gap-2">
+                            <div
+                              className={`p-2.5 rounded-lg border ${
+                                answer.correct
+                                  ? "bg-green-900/10 border-green-700/30"
+                                  : "bg-red-900/10 border-red-700/30"
+                              }`}
+                            >
+                              <p className="font-medium  mb-1 text-gray-400">
+                                Student's Answer:
+                              </p>
+                              <p
+                                className={`font-mono  ${
+                                  answer.correct
+                                    ? "text-green-400"
+                                    : "text-red-400"
+                                }`}
+                              >
+                                {getUserAnswerText(answer)}
+                              </p>
+                              {answer.scoreAchieved !== undefined && (
+                                <p className=" text-gray-400 mt-1.5">
+                                  Score: {answer.scoreAchieved}
+                                </p>
+                              )}
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-green-900/10 border border-green-700/30">
+                              <p className="font-medium  mb-1 text-gray-400">
+                                Correct Answer:
+                              </p>
+                              <p className="text-green-400 font-mono ">
+                                {getCorrectAnswerText(answer)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Question Options - Right Column */}
+                        <div className="space-y-3">
+                          {/* Multiple Choice Options */}
+                          {getQuestionType(answer.questionId) ===
+                            "MULTIPLE_CHOICE" && (
+                            <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                              <h4 className="font-medium text-gray-300  mb-1.5">
+                                All Options:
+                              </h4>
+                              <div className="space-y-1">
+                                {getQuestionById(
+                                  answer.questionId
+                                )?.options?.map((option, i) => (
+                                  <div
+                                    key={i}
+                                    className={`p-2 rounded-md border ${
+                                      option.isCorrect
+                                        ? "bg-green-900/10 border-green-700/30"
+                                        : answer.selectedAnswers?.some(
+                                            (sa) => sa.id === option.id
+                                          )
+                                        ? "bg-red-900/10 border-red-700/30"
+                                        : "bg-gray-800/20 border-gray-700/20"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      {option.isCorrect && (
+                                        <CheckCircle className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
+                                      )}
+                                      {!option.isCorrect &&
+                                        answer.selectedAnswers?.some(
+                                          (sa) => sa.id === option.id
+                                        ) && (
+                                          <XCircle className="h-3.5 w-3.5 text-red-400 flex-shrink-0" />
+                                        )}
+                                      <span
+                                        className={` ${
+                                          option.isCorrect
+                                            ? "text-green-400"
+                                            : answer.selectedAnswers?.some(
+                                                (sa) => sa.id === option.id
+                                              )
+                                            ? "text-red-400"
+                                            : "text-gray-300"
+                                        }`}
+                                      >
+                                        {option.text}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Fill in the Blanks */}
+                          {getQuestionType(answer.questionId) ===
+                            "FILL_IN_THE_BLANK" && (
+                            <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                              <h4 className="font-medium text-gray-300  mb-1.5">
+                                Blank Answers:
+                              </h4>
+                              <div className="space-y-2">
+                                {getQuestionById(
+                                  answer.questionId
+                                )?.correctBlanks?.map((blank, i) => (
+                                  <div key={i} className="space-y-1">
+                                    <p className=" text-gray-400">
+                                      Blank {i + 1}
+                                    </p>
+                                    <div className="flex gap-2">
+                                      <div className="p-1.5 rounded-md bg-green-900/10 border border-green-700/30 flex-1">
+                                        <p className=" text-green-400">
+                                          Correct: {blank}
+                                        </p>
+                                      </div>
+                                      <div
+                                        className={`p-1.5 rounded-md flex-1 ${
+                                          answer.fillInBlanksAnswers?.[i] ===
+                                          blank
+                                            ? "bg-green-900/10 border border-green-700/30"
+                                            : "bg-red-900/10 border border-red-700/30"
+                                        }`}
+                                      >
+                                        <p
+                                          className={` ${
+                                            answer.fillInBlanksAnswers?.[i] ===
+                                            blank
+                                              ? "text-green-400"
+                                              : "text-red-400"
+                                          }`}
+                                        >
+                                          Student:{" "}
+                                          {answer.fillInBlanksAnswers?.[i] ||
+                                            "No answer"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* True/False */}
+                          {getQuestionType(answer.questionId) ===
+                            "TRUE_FALSE" && (
+                            <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                              <h4 className="font-medium text-gray-300  mb-1.5">
+                                True/False Answer:
+                              </h4>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="p-1.5 rounded-md bg-green-900/10 border border-green-700/30">
+                                  <p className=" text-green-400">
+                                    Correct:{" "}
+                                    {getQuestionById(answer.questionId)
+                                      ?.trueFalseAnswer
+                                      ? "True"
+                                      : "False"}
+                                  </p>
+                                </div>
+                                <div
+                                  className={`p-1.5 rounded-md ${
+                                    answer.correct
+                                      ? "bg-green-900/10 border border-green-700/30"
+                                      : "bg-red-900/10 border border-red-700/30"
+                                  }`}
+                                >
+                                  <p
+                                    className={` ${
+                                      answer.correct
+                                        ? "text-green-400"
+                                        : "text-red-400"
+                                    }`}
+                                  >
+                                    Student:{" "}
+                                    {answer.userAnswerTrueFalse
+                                      ? "True"
+                                      : "False"}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Pronunciation */}
+                          {getQuestionType(answer.questionId) ===
+                            "PRONUNCIATION" && (
+                            <div className="space-y-2">
+                              <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                                <h4 className="font-medium text-gray-300  mb-1.5">
+                                  Pronunciation Text:
+                                </h4>
+                                <p className=" text-gray-200 font-mono p-1.5 bg-gray-800/40 rounded-md">
+                                  "
+                                  {
+                                    getQuestionById(answer.questionId)
+                                      ?.pronunciationText
+                                  }
+                                  "
+                                </p>
+                              </div>
+
+                              {/* Student's Audio */}
+                              {answer.audioUrl && (
+                                <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                                  <h4 className="font-medium text-gray-300  mb-1.5">
+                                    Student's Audio Answer:
+                                  </h4>
+                                  <AudioPreview
+                                    audioUrl={answer.audioUrl}
+                                    compact
+                                  />
+                                </div>
+                              )}
+
+                              {/* Score */}
+                              <div className="p-2.5 rounded-lg bg-blue-900/10 border border-blue-700/30">
+                                <div className="flex justify-between items-center">
+                                  <p className=" text-gray-300">
+                                    Pronunciation Score:
+                                  </p>
+                                  <Badge
+                                    className={getScoreColor(
+                                      answer.scoreAchieved || 0
+                                    )}
+                                  >
+                                    {answer.scoreAchieved || 0}%
+                                  </Badge>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Question Explanation */}
+                          {getQuestionExplanation(answer.questionId) && (
+                            <div className="p-2.5 rounded-lg bg-blue-900/10 border border-blue-700/30">
+                              <p className="font-medium  mb-1 text-gray-400">
+                                Explanation:
+                              </p>
+                              <p className="text-gray-300 ">
+                                {getQuestionExplanation(answer.questionId)}
+                              </p>
+                            </div>
                           )}
                         </div>
-                        <div className="p-4 rounded-lg bg-green-50 border border-green-200">
-                          <p className="font-medium text-sm mb-2">
-                            Correct Answer:
-                          </p>
-                          <p className="text-green-700 font-mono">
-                            {getCorrectAnswerText(answer)}
-                          </p>
-                        </div>
                       </div>
-
-                      {/* Audio if available */}
-                      {answer.audioUrl && (
-                        <div>
-                          <h4 className="font-medium text-gray-800 mb-2">
-                            Student's Audio Answer:
-                          </h4>
-                          <AudioPreview audioUrl={answer.audioUrl} compact />
-                        </div>
-                      )}
-
-                      {/* Question Explanation */}
-                      {getQuestionExplanation(answer.questionId) && (
-                        <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="font-medium text-sm mb-2">
-                            Explanation:
-                          </p>
-                          <p className="text-blue-700">
-                            {getQuestionExplanation(answer.questionId)}
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </AccordionContent>
                 </AccordionItem>

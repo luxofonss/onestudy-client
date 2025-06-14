@@ -1111,16 +1111,23 @@ export default function QuizAttemptPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        Loading quiz...
+      <div className="flex justify-center items-center h-screen bg-gray-900">
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-t-blue-500 border-gray-700 rounded-full animate-spin"></div>
+          <p className="mt-4 text-gray-400">Loading quiz...</p>
+        </div>
       </div>
     );
   }
 
   if (!content) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        Quiz content not available.
+      <div className="flex justify-center items-center h-screen bg-gray-900 text-gray-300">
+        <div className="text-center">
+          <div className="text-5xl mb-4">😕</div>
+          <h2 className="text-2xl font-bold mb-2">Quiz Not Available</h2>
+          <p className="mb-6">The quiz content could not be loaded.</p>
+        </div>
       </div>
     );
   }
@@ -1128,8 +1135,12 @@ export default function QuizAttemptPage() {
   const currentQState = content.questions[currentQuestion];
   if (!currentQState) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        Current question not found.
+      <div className="flex justify-center items-center h-screen bg-gray-900 text-gray-300">
+        <div className="text-center">
+          <div className="text-5xl mb-4">🔍</div>
+          <h2 className="text-2xl font-bold mb-2">Question Not Found</h2>
+          <p className="mb-6">The current question could not be loaded.</p>
+        </div>
       </div>
     );
   }
@@ -1138,375 +1149,389 @@ export default function QuizAttemptPage() {
   // <audio ref={audioPlayerRef} className="hidden" /> (place somewhere in JSX if needed globally)
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl animate-fade-in">
-      <audio ref={audioPlayerRef} className="hidden" />
-      {/* Progress Header with Timer */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">{content.title}</h1>
-          <div className="flex items-center space-x-4">
-            {content.hasTimer && (
-              <div
-                className={`flex items-center space-x-2 px-3 py-1 rounded-lg ${
-                  timeRemaining < content.warningTime && timeRemaining > 0 // warningTime is in seconds
-                    ? "bg-red-100 text-red-700 animate-pulse"
-                    : "bg-blue-100 text-blue-700"
-                }`}
-              >
-                <Timer className="h-4 w-4" />
-                <span className="font-mono font-semibold">
-                  {formatTimerDisplay(timeRemaining)}
-                </span>
-              </div>
-            )}
-            <span className="text-sm text-gray-600">
-              Question {currentQuestion + 1} of {content.questions.length}
-            </span>
-            <Badge
-              variant="outline"
-              className="border-green-600 text-green-600"
-            >
-              {
-                Object.keys(quizAnswers).filter(
-                  (qid) =>
-                    quizAnswers[qid].answer !== null &&
-                    quizAnswers[qid].answer !== ""
-                ).length
-              }{" "}
-              Answered
-            </Badge>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <Progress value={progress} className="h-2 bg-teal-100" />
-          {content.allowQuestionPicker && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">
-                  Navigation: {content.navigationMode.replace("-", " ")}
-                </span>
-              </div>
-              <div className="relative">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 text-gray-100 py-6">
+      <div className="container mx-auto px-4 max-w-5xl animate-fade-in">
+        <audio ref={audioPlayerRef} className="hidden" />
+        {/* Progress Header with Timer */}
+        <div className="mb-6">
+          <div className="flex flex-wrap items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-400 via-blue-500 to-purple-600 text-transparent bg-clip-text">
+              {content.title}
+            </h1>
+            <div className="flex items-center space-x-3">
+              {content.hasTimer && (
                 <div
-                  ref={questionNavRef}
-                  className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100"
-                  style={{ scrollbarWidth: "thin" }}
+                  className={`flex items-center space-x-2 px-3 py-1.5 rounded-lg ${
+                    timeRemaining < content.warningTime && timeRemaining > 0
+                      ? "bg-red-900/30 text-red-400 border border-red-700/50 animate-pulse"
+                      : "bg-blue-900/30 border border-blue-700/50 text-blue-400"
+                  }`}
                 >
-                  {content.questions.map((q, index) => {
-                    const questionNumber = index + 1;
-                    const isAnswered =
-                      quizAnswers[q.id]?.answer !== null &&
-                      quizAnswers[q.id]?.answer !== "";
-                    const isCurrent = currentQuestion === index;
-                    const canNav = canNavigateToQuestion(index);
-                    return (
-                      <button
-                        key={q.id}
-                        onClick={() => handleQuestionNavigation(index)}
-                        disabled={!canNav}
-                        className={`
-                          flex-shrink-0 w-10 h-10 rounded-lg border-2 flex items-center justify-center text-xs font-medium transition-all relative
-                          ${
-                            isCurrent
-                              ? "border-teal-600 bg-teal-600 text-white shadow-lg ring-2 ring-teal-300 ring-offset-1"
-                              : isAnswered
-                              ? "border-green-500 bg-green-50 text-green-700 hover:bg-green-100"
-                              : canNav
-                              ? "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:bg-gray-50"
-                              : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-70"
-                          }
-                        `}
-                        title={`Question ${questionNumber}${
-                          isAnswered ? " (Answered)" : ""
-                        }`}
-                      >
-                        {questionNumber}
-                        {isAnswered && !isCurrent && (
-                          <CheckCircle className="absolute -top-1.5 -right-1.5 h-4 w-4 text-green-500 bg-white rounded-full p-0.5" />
-                        )}
-                        {!isAnswered && !isCurrent && canNav && (
-                          <Circle className="absolute -top-1.5 -right-1.5 h-4 w-4 text-gray-400 bg-white rounded-full p-0.5" />
-                        )}
-                      </button>
-                    );
-                  })}
+                  <Timer className="h-4 w-4" />
+                  <span className="font-mono font-semibold">
+                    {formatTimerDisplay(timeRemaining)}
+                  </span>
                 </div>
-                {content.questions.length > 8 && ( // Show arrows if many questions
-                  <>
-                    <button
-                      onClick={() => scrollQuestionNav("left")}
-                      className="absolute left-0 top-1/2 -translate-y-1/2 -ml-3 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm border shadow-md flex items-center justify-center hover:bg-gray-100 z-10 disabled:opacity-50"
-                      disabled={questionNavRef.current?.scrollLeft === 0}
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={() => scrollQuestionNav("right")}
-                      className="absolute right-0 top-1/2 -translate-y-1/2 -mr-3 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm border shadow-md flex items-center justify-center hover:bg-gray-100 z-10"
-                      disabled={
-                        questionNavRef.current &&
-                        questionNavRef.current.scrollLeft +
-                          questionNavRef.current.clientWidth >=
-                          questionNavRef.current.scrollWidth
-                      }
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </button>
-                  </>
-                )}
+              )}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-800/50 border border-gray-700/50">
+                <span className="text-sm text-gray-400">Question</span>
+                <span className="text-lg font-semibold text-white">
+                  {currentQuestion + 1}
+                </span>
+                <span className="text-sm text-gray-400">of</span>
+                <span className="text-lg font-semibold text-white">
+                  {content.questions.length}
+                </span>
               </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <Card className="border-teal-100 mb-8 shadow-lg">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl text-gray-800">
-              {currentQState.question}
-            </CardTitle>
-            <div className="flex items-center space-x-2">
               <Badge
                 variant="outline"
-                className="border-teal-600 text-teal-600"
+                className="border-green-700/70 bg-green-900/20 text-green-400"
               >
-                {currentQState.type.replace("_", " ")}
+                {
+                  Object.keys(quizAnswers).filter(
+                    (qid) =>
+                      quizAnswers[qid].answer !== null &&
+                      quizAnswers[qid].answer !== ""
+                  ).length
+                }{" "}
+                Answered
               </Badge>
-              {quizAnswers[currentQState.id]?.answer !== null &&
-                quizAnswers[currentQState.id]?.answer !== "" && (
-                  <Badge className="bg-green-100 text-green-800">
-                    ✓ Answered
-                  </Badge>
-                )}
             </div>
           </div>
-          <CardDescription>{currentQState.instructions}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {currentQState.imageUrl && (
-            <div className="mb-4 max-w-md mx-auto">
-              <img
-                src={currentQState.imageUrl}
-                alt="Question visual aid"
-                className="max-w-full h-auto rounded-lg border shadow-sm"
-                onError={(e) =>
-                  (e.currentTarget.src =
-                    "https://placehold.co/600x400/eee/ccc?text=Image+Not+Found")
-                }
-              />
-            </div>
-          )}
 
-          {currentQState.type === "MULTIPLE_CHOICE" &&
-            currentQState.options && (
-              <RadioGroup
-                value={selectedAnswer}
-                onValueChange={(value) => {
-                  const option = currentQState.options?.find(
-                    (opt) => opt.text === value
-                  );
-                  if (option) handleMultipleChoiceChange(value, option.id);
-                }}
-              >
-                <div className="space-y-3">
-                  {currentQState.options.map((option) => (
-                    <Label
-                      key={option.id}
-                      htmlFor={option.id}
-                      className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md
-                                ${
-                                  selectedOptionId === option.id
-                                    ? "bg-teal-50 border-teal-500 ring-2 ring-teal-300"
-                                    : "border-gray-200 hover:border-gray-300"
-                                }`}
-                    >
-                      <RadioGroupItem value={option.text} id={option.id} />
-                      <span>{option.text}</span>
-                    </Label>
-                  ))}
+          <div className="space-y-4">
+            <div className="relative h-2 bg-gray-800/70 rounded-full overflow-hidden">
+              <div
+                className="absolute top-0 left-0 h-full bg-gradient-to-r from-teal-500 to-blue-600 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+
+            {content.allowQuestionPicker && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-400">
+                    Navigation:{" "}
+                    <span className="text-gray-300">
+                      {content.navigationMode.replace("-", " ")}
+                    </span>
+                  </span>
                 </div>
-              </RadioGroup>
+                <div className="relative">
+                  <div
+                    ref={questionNavRef}
+                    className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 px-1"
+                    style={{ scrollbarWidth: "thin" }}
+                  >
+                    {content.questions.map((q, index) => {
+                      const questionNumber = index + 1;
+                      const isAnswered =
+                        quizAnswers[q.id]?.answer !== null &&
+                        quizAnswers[q.id]?.answer !== "";
+                      const isCurrent = currentQuestion === index;
+                      const canNav = canNavigateToQuestion(index);
+                      return (
+                        <button
+                          key={q.id}
+                          onClick={() => handleQuestionNavigation(index)}
+                          disabled={!canNav}
+                          className={`
+                            flex-shrink-0 w-9 h-9 rounded-lg border flex items-center justify-center text-xs font-medium transition-all relative
+                            ${
+                              isCurrent
+                                ? "border-blue-600 bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-900/50"
+                                : isAnswered
+                                ? "border-green-700 bg-green-900/30 text-green-400 hover:bg-green-800/50"
+                                : canNav
+                                ? "border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600 hover:bg-gray-700"
+                                : "border-gray-800 bg-gray-900 text-gray-500 cursor-not-allowed opacity-70"
+                            }
+                          `}
+                          title={`Question ${questionNumber}${
+                            isAnswered ? " (Answered)" : ""
+                          }`}
+                        >
+                          {questionNumber}
+                          {isAnswered && !isCurrent && (
+                            <CheckCircle className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 text-green-400 bg-gray-900 rounded-full p-0.5" />
+                          )}
+                          {!isAnswered && !isCurrent && canNav && (
+                            <Circle className="absolute -top-1.5 -right-1.5 h-3.5 w-3.5 text-gray-500 bg-gray-900 rounded-full p-0.5" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {content.questions.length > 8 && (
+                    <>
+                      <button
+                        onClick={() => scrollQuestionNav("left")}
+                        className="absolute left-0 top-1/2 -translate-y-1/2 -ml-3 w-8 h-8 rounded-full bg-gray-800/90 backdrop-blur-sm border border-gray-700 shadow-md flex items-center justify-center hover:bg-gray-700 z-10 disabled:opacity-50"
+                        disabled={questionNavRef.current?.scrollLeft === 0}
+                      >
+                        <ChevronLeft className="h-5 w-5 text-gray-300" />
+                      </button>
+                      <button
+                        onClick={() => scrollQuestionNav("right")}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 -mr-3 w-8 h-8 rounded-full bg-gray-800/90 backdrop-blur-sm border border-gray-700 shadow-md flex items-center justify-center hover:bg-gray-700 z-10"
+                        disabled={
+                          questionNavRef.current &&
+                          questionNavRef.current.scrollLeft +
+                            questionNavRef.current.clientWidth >=
+                            questionNavRef.current.scrollWidth
+                        }
+                      >
+                        <ChevronRight className="h-5 w-5 text-gray-300" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Card className="border-gray-700 bg-gray-800/50 backdrop-blur-sm shadow-xl mb-6">
+          <CardHeader className="border-b border-gray-700/50 pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl text-gray-100">
+                {currentQState.question}
+              </CardTitle>
+              <div className="flex items-center space-x-2">
+                <Badge
+                  variant="outline"
+                  className="border-blue-700/70 bg-blue-900/20 text-blue-400"
+                >
+                  {currentQState.type.replace("_", " ")}
+                </Badge>
+                {quizAnswers[currentQState.id]?.answer !== null &&
+                  quizAnswers[currentQState.id]?.answer !== "" && (
+                    <Badge className="bg-green-900/20 text-green-400 border border-green-700/50">
+                      ✓ Answered
+                    </Badge>
+                  )}
+              </div>
+            </div>
+            <CardDescription className="text-gray-400 mt-1">
+              {currentQState.instructions}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4">
+            {currentQState.imageUrl && (
+              <div className="mb-4 max-w-md mx-auto">
+                <img
+                  src={currentQState.imageUrl}
+                  alt="Question visual aid"
+                  className="max-w-full h-auto rounded-lg border border-gray-700 shadow-md"
+                  onError={(e) =>
+                    (e.currentTarget.src =
+                      "https://placehold.co/600x400/1f2937/374151?text=Image+Not+Found")
+                  }
+                />
+              </div>
             )}
 
-          {currentQState.type === "FILL_IN_THE_BLANK" &&
-            currentQState.question && (
-              <div className="space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <p className="text-lg font-medium text-blue-900 leading-relaxed">
-                    {currentQState.question
-                      .split("_____")
-                      .map((part, index, array) => (
-                        <span key={index}>
-                          {part}
-                          {index < array.length - 1 && (
-                            <input
-                              type="text"
-                              value={fillInAnswers[index] || ""}
-                              onChange={(e) =>
-                                handleFillInChange(index, e.target.value)
-                              }
-                              onBlur={() => handleFillInBlur(index)}
-                              className="mx-2 px-3 py-1 border border-blue-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-w-[120px] text-center text-base"
-                              placeholder="type here"
-                            />
-                          )}
-                        </span>
-                      ))}
+            {currentQState.type === "MULTIPLE_CHOICE" &&
+              currentQState.options && (
+                <RadioGroup
+                  value={selectedAnswer}
+                  onValueChange={(value) => {
+                    const option = currentQState.options?.find(
+                      (opt) => opt.text === value
+                    );
+                    if (option) handleMultipleChoiceChange(value, option.id);
+                  }}
+                >
+                  <div className="space-y-3">
+                    {currentQState.options.map((option) => (
+                      <Label
+                        key={option.id}
+                        htmlFor={option.id}
+                        className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-all
+                                  ${
+                                    selectedOptionId === option.id
+                                      ? "bg-blue-900/30 border-blue-600/70 text-blue-100"
+                                      : "border-gray-700 bg-gray-800/50 text-gray-300 hover:border-gray-600 hover:bg-gray-700/50"
+                                  }`}
+                      >
+                        <RadioGroupItem
+                          value={option.text}
+                          id={option.id}
+                          className="text-blue-500"
+                        />
+                        <span>{option.text}</span>
+                      </Label>
+                    ))}
+                  </div>
+                </RadioGroup>
+              )}
+
+            {currentQState.type === "FILL_IN_THE_BLANK" &&
+              currentQState.question && (
+                <div className="space-y-4">
+                  <div className="bg-gray-900/70 p-4 rounded-lg border border-gray-700">
+                    <p className="text-lg font-medium text-gray-200 leading-relaxed">
+                      {currentQState.question
+                        .split("_____")
+                        .map((part, index, array) => (
+                          <span key={index}>
+                            {part}
+                            {index < array.length - 1 && (
+                              <input
+                                type="text"
+                                value={fillInAnswers[index] || ""}
+                                onChange={(e) =>
+                                  handleFillInChange(index, e.target.value)
+                                }
+                                onBlur={() => handleFillInBlur(index)}
+                                className="mx-2 px-3 py-1 border border-blue-700/50 bg-blue-900/20 text-blue-100 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 min-w-[120px] text-center text-base"
+                                placeholder="type here"
+                              />
+                            )}
+                          </span>
+                        ))}
+                    </p>
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    Fill in all the blanks with the appropriate words.
+                  </div>
+                </div>
+              )}
+
+            {currentQState.type === "PRONUNCIATION" && (
+              <div className="space-y-6">
+                <div className="bg-indigo-900/20 p-6 rounded-lg border border-indigo-700/50">
+                  <h3 className="font-medium text-indigo-300 mb-2">
+                    Text to pronounce:
+                  </h3>
+                  <p className="text-xl font-semibold text-indigo-100 mb-1 leading-relaxed">
+                    {currentQState.pronunciationText}
                   </p>
                 </div>
-                <div className="text-sm text-gray-600">
-                  Fill in all the blanks with the appropriate words.
+                <div className="bg-gray-800/70 p-6 rounded-lg border border-gray-700">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium text-gray-300">
+                      Record your pronunciation:
+                    </h3>
+                    {isRecording && (
+                      <div className="flex items-center text-red-400">
+                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse mr-2"></div>
+                        <span className="font-mono">
+                          {formatTime(recordingTime)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    {!isRecording ? (
+                      <Button
+                        onClick={startRecording}
+                        className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white px-6 py-3"
+                        disabled={hasRecorded && !!audioBlob}
+                      >
+                        <Mic className="h-5 w-5 mr-2" />
+                        {hasRecorded ? "Recorded" : "Start Recording"}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={stopRecording}
+                        className="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 animate-pulse"
+                      >
+                        <Square className="h-5 w-5 mr-2" /> Stop Recording
+                      </Button>
+                    )}
+                    {hasRecorded &&
+                      (audioBlob ||
+                        quizAnswers[currentQState.id]?.audioUrl) && (
+                        <>
+                          <Button
+                            onClick={playRecording}
+                            variant="outline"
+                            className="border-blue-700/50 bg-blue-900/20 text-blue-300 hover:bg-blue-800/30 px-5 py-3"
+                          >
+                            <Play className="h-5 w-5 mr-2" /> Play
+                          </Button>
+                          {audioBlob && (
+                            <Button
+                              onClick={() => {
+                                setHasRecorded(false);
+                                setAudioBlob(null);
+                                setRecordingTime(0);
+                              }}
+                              variant="outline"
+                              className="border-gray-600 text-gray-300 hover:bg-gray-700 px-5 py-3"
+                            >
+                              <RotateCcw className="h-5 w-5 mr-2" /> Re-record
+                            </Button>
+                          )}
+                        </>
+                      )}
+                  </div>
+                  {hasRecorded && audioBlob && (
+                    <div className="mt-4 p-3 bg-green-900/20 border border-green-700/50 rounded-lg text-sm text-green-300">
+                      ✓ Recording ready. Duration: {formatTime(recordingTime)}.
+                      You can re-record if needed.
+                    </div>
+                  )}
+                  {hasRecorded &&
+                    !audioBlob &&
+                    quizAnswers[currentQState.id]?.audioUrl && (
+                      <div className="mt-4 p-3 bg-blue-900/20 border border-blue-700/50 rounded-lg text-sm text-blue-300">
+                        ✓ Recording submitted. You can play it back or record a
+                        new one to replace it.
+                      </div>
+                    )}
                 </div>
               </div>
             )}
 
-          {currentQState.type === "PRONUNCIATION" && (
-            <div className="space-y-6">
-              <div className="bg-indigo-50 p-6 rounded-lg border border-indigo-200">
-                <h3 className="font-medium text-indigo-800 mb-2">
-                  Text to pronounce:
-                </h3>
-                <p className="text-xl font-semibold text-indigo-900 mb-1 leading-relaxed">
-                  {currentQState.pronunciationText}
-                </p>
-              </div>
-              <div className="bg-gray-50 p-6 rounded-lg border">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-medium text-gray-800">
-                    Record your pronunciation:
-                  </h3>
-                  {isRecording && (
-                    <div className="flex items-center text-red-600">
-                      <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse mr-2"></div>
-                      <span className="font-mono">
-                        {formatTime(recordingTime)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center space-x-3">
-                  {!isRecording ? (
-                    <Button
-                      onClick={startRecording}
-                      className="bg-red-600 hover:bg-red-700 text-white px-6 py-3"
-                      disabled={hasRecorded && !!audioBlob}
-                    >
-                      {" "}
-                      {/* Disable if already recorded and blob exists */}
-                      <Mic className="h-5 w-5 mr-2" />{" "}
-                      {hasRecorded ? "Recorded" : "Start Recording"}
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={stopRecording}
-                      className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3"
-                    >
-                      <Square className="h-5 w-5 mr-2" /> Stop Recording
-                    </Button>
-                  )}
-                  {hasRecorded &&
-                    (audioBlob || quizAnswers[currentQState.id]?.audioUrl) && ( // Show play button if there's a blob OR uploaded URL
-                      <>
-                        <Button
-                          onClick={playRecording}
-                          variant="outline"
-                          className="border-blue-600 text-blue-600 hover:bg-blue-50 px-5 py-3"
-                        >
-                          <Play className="h-5 w-5 mr-2" /> Play
-                        </Button>
-                        {audioBlob && ( // Only show re-record if there's a local blob
-                          <Button
-                            onClick={() => {
-                              setHasRecorded(false);
-                              setAudioBlob(null);
-                              setRecordingTime(0);
-                            }}
-                            variant="outline"
-                            className="border-gray-500 text-gray-600 hover:bg-gray-100 px-5 py-3"
-                          >
-                            <RotateCcw className="h-5 w-5 mr-2" /> Re-record
-                          </Button>
-                        )}
-                      </>
-                    )}
-                </div>
-                {hasRecorded && audioBlob && (
-                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-                    ✓ Recording ready. Duration: {formatTime(recordingTime)}.
-                    You can re-record if needed.
-                  </div>
-                )}
-                {hasRecorded &&
-                  !audioBlob &&
-                  quizAnswers[currentQState.id]?.audioUrl && ( // Previously submitted, has URL
-                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-700">
-                      ✓ Recording submitted. You can play it back or record a
-                      new one to replace it.
-                    </div>
-                  )}
-              </div>
-            </div>
-          )}
+            {currentQState.type === "LISTENING" && (
+              <ListeningQuestion
+                question={currentQState.question}
+                audioUrl={currentQState.audioUrl || null}
+                maxListeningTime={currentQState.maxListeningTime}
+                options={currentQState.options}
+                selectedOptionId={selectedOptionId}
+                onOptionSelect={handleMultipleChoiceChange}
+                hasListened={hasListened}
+                onListeningStateChange={setHasListened}
+                formatTime={formatTime}
+              />
+            )}
+          </CardContent>
+        </Card>
 
-          {currentQState.type === "LISTENING" && (
-            <ListeningQuestion
-              question={currentQState.question}
-              audioUrl={currentQState.audioUrl || null}
-              maxListeningTime={currentQState.maxListeningTime}
-              options={currentQState.options}
-              selectedOptionId={selectedOptionId}
-              onOptionSelect={handleMultipleChoiceChange}
-              hasListened={hasListened}
-              onListeningStateChange={setHasListened}
-              formatTime={formatTime}
-            />
-          )}
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-between items-center mt-10">
-        <Button
-          variant="outline"
-          className="border-gray-400 text-gray-700 hover:bg-gray-100 px-6 py-3"
-          disabled={!canGoBack()}
-          onClick={handlePrevious}
-        >
-          <ChevronLeft className="h-5 w-5 mr-1" /> Previous
-        </Button>
-        <div className="flex items-center space-x-3">
-          {currentQuestion < content.questions.length - 1 ? (
-            <Button
-              onClick={handleNext}
-              disabled={!canGoForward()}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 disabled:opacity-60"
-            >
-              Next Question <ChevronRight className="h-5 w-5 ml-1" />
-            </Button>
-          ) : (
-            <Button
-              onClick={handleFinish}
-              disabled={!canProceedCurrentQuestion() || isSubmitting}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 disabled:opacity-60"
-            >
-              {isSubmitting ? "Submitting..." : "Finish Assessment"}{" "}
-              <Send className="h-5 w-5 ml-1" />
-            </Button>
-          )}
+        <div className="flex justify-between items-center mt-8">
+          <Button
+            variant="outline"
+            className="border-gray-700 text-gray-300 hover:bg-gray-800/70 px-6 py-3"
+            disabled={!canGoBack()}
+            onClick={handlePrevious}
+          >
+            <ChevronLeft className="h-5 w-5 mr-1" /> Previous
+          </Button>
+          <div className="flex items-center space-x-3">
+            {currentQuestion < content.questions.length - 1 ? (
+              <Button
+                onClick={handleNext}
+                disabled={!canGoForward()}
+                className="bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-500 hover:to-blue-500 text-white px-6 py-3 disabled:opacity-60 shadow-lg shadow-blue-900/20"
+              >
+                Next Question <ChevronRight className="h-5 w-5 ml-1" />
+              </Button>
+            ) : (
+              <Button
+                onClick={handleFinish}
+                disabled={!canProceedCurrentQuestion() || isSubmitting}
+                className="bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-500 hover:to-teal-500 text-white px-6 py-3 disabled:opacity-60 shadow-lg shadow-green-900/20"
+              >
+                {isSubmitting ? "Submitting..." : "Finish Assessment"}{" "}
+                <Send className="h-5 w-5 ml-1" />
+              </Button>
+            )}
+          </div>
         </div>
       </div>
-      {/* Overall Submit Button - if needed separately from Finish Assessment */}
-      {/* <div className="mt-6 text-center">
-            <Button
-                onClick={submitQuiz}
-                variant="default"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
-                disabled={isSubmitting || Object.keys(quizAnswers).length === 0}
-            >
-                {isSubmitting ? 'Submitting...' : `Submit All (${Object.keys(quizAnswers).length}/${content.questions.length})`}
-            </Button>
-        </div> */}
     </div>
   );
 }

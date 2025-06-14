@@ -17,6 +17,7 @@ import {
   ChevronRight,
   CheckCircle,
   Circle,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -241,12 +242,52 @@ export default function InteractionPage() {
     }
   };
 
+  const getDifficultyColor = () => {
+    if (!content?.difficulty) return "bg-blue-500";
+
+    switch (content.difficulty.toLowerCase()) {
+      case "beginner":
+        return "bg-green-500";
+      case "intermediate":
+        return "bg-blue-500";
+      case "advanced":
+        return "bg-purple-500";
+      default:
+        return "bg-blue-500";
+    }
+  };
+
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-900">
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 border-4 border-t-blue-500 border-gray-700 rounded-full animate-spin"></div>
+          <p className="mt-4 text-gray-400">Loading quiz content...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!content) {
-    return <div>Quiz not found</div>;
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-900 text-gray-300">
+        <div className="text-center">
+          <div className="text-5xl mb-4">😕</div>
+          <h2 className="text-2xl font-bold mb-2">Quiz Not Found</h2>
+          <p className="mb-6">
+            The quiz you're looking for doesn't exist or has been removed.
+          </p>
+          <Link href="/library">
+            <Button
+              variant="outline"
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              Return to Library
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const handleShare = async () => {
@@ -267,79 +308,171 @@ export default function InteractionPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl animate-fade-in">
-      <Card className="border-teal-100 mb-8">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center mb-4">
-            <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center">
-              <BookOpen className="h-8 w-8 text-teal-600" />
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 text-gray-100">
+      <div className="container mx-auto px-4 py-8 max-w-6xl animate-fade-in">
+        <Card className="border-gray-700 bg-gray-800/50 backdrop-blur-sm shadow-xl">
+          <CardHeader className="pb-2 relative">
+            <div className="absolute -top-10 left-1/2 transform -translate-x-1/2">
+              <div className="w-20 h-20 bg-gradient-to-br from-teal-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg border-4 border-gray-800">
+                <BookOpen className="h-10 w-10 text-white" />
+              </div>
             </div>
-          </div>
-          <CardTitle className="text-3xl font-bold mb-4">
-            {content.title}
-          </CardTitle>
-          <CardDescription className="text-lg mb-6">
-            {content.description}
-          </CardDescription>
 
-          <div className="flex items-center justify-center space-x-8 text-sm text-gray-600 mb-8">
-            <div className="flex items-center">
-              <Clock className="h-4 w-4 mr-2" />
-              {content.duration}
+            <div className="mt-10 text-center">
+              <CardTitle className="text-3xl font-bold bg-gradient-to-r from-teal-400 via-blue-500 to-purple-600 text-transparent bg-clip-text">
+                {content.title}
+              </CardTitle>
+              <CardDescription className="text-lg mt-3 text-gray-300">
+                {content.description}
+              </CardDescription>
             </div>
-            <div className="flex items-center">
-              <Users className="h-4 w-4 mr-2" />
-              {content.participants.toLocaleString()} participants
-            </div>
-            <div className="flex items-center">
-              <Star className="h-4 w-4 mr-2 fill-yellow-400 text-yellow-400" />
-              {content.rating}
-            </div>
-          </div>
-          <div className="text-center text-sm text-gray-500 mb-6">
-            Created by:{" "}
-            <span className="font-medium text-gray-700">{content.creator}</span>
-          </div>
-        </CardHeader>
-        <CardContent className="text-center space-y-6">
-          {/* Quiz Settings Info */}
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h3 className="font-semibold text-blue-800 mb-2">Quiz Settings</h3>
-            <div className="text-sm text-blue-700 space-y-1">
-              <p>• Navigation: {getNavigationModeDescription()}</p>
-              {content.hasTimer && (
-                <p>• Time Limit: {content.timeLimit} minutes</p>
-              )}
-              {content.allowQuestionPicker && (
-                <p>• Question picker available</p>
-              )}
-              <p>• {content.questions.length} questions total</p>
-            </div>
-          </div>
+          </CardHeader>
 
-          <div className="flex gap-4 justify-center">
-            <Button
-              size="lg"
-              onClick={handleStart}
-              className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-4 text-lg transform hover:scale-105 transition-all duration-200"
-            >
-              <Play className="h-5 w-5 mr-2" />
-              Start{" "}
-              {content.navigationMode === "sequential" ? "Sequential " : ""}
-              Quiz
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={handleShare}
-              className="border-teal-600 text-teal-600 hover:bg-teal-50 px-8 py-4 text-lg"
-            >
-              <Share2 className="h-5 w-5 mr-2" />
-              Share
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          <CardContent className="space-y-6">
+            {/* Quiz Stats - Grid Layout */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+              <div className="bg-gray-700/50 rounded-lg p-3 border border-gray-600/50 flex flex-col items-center justify-center">
+                <div className="flex items-center justify-center mb-1">
+                  <Clock className="h-4 w-4 mr-2 text-teal-400" />
+                  <span className="text-xs uppercase text-gray-400">
+                    Duration
+                  </span>
+                </div>
+                <span className="text-lg font-semibold">
+                  {content.duration}
+                </span>
+              </div>
+
+              <div className="bg-gray-700/50 rounded-lg p-3 border border-gray-600/50 flex flex-col items-center justify-center">
+                <div className="flex items-center justify-center mb-1">
+                  <Users className="h-4 w-4 mr-2 text-blue-400" />
+                  <span className="text-xs uppercase text-gray-400">
+                    Participants
+                  </span>
+                </div>
+                <span className="text-lg font-semibold">
+                  {content.participants.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="bg-gray-700/50 rounded-lg p-3 border border-gray-600/50 flex flex-col items-center justify-center">
+                <div className="flex items-center justify-center mb-1">
+                  <Star className="h-4 w-4 mr-2 text-yellow-400" />
+                  <span className="text-xs uppercase text-gray-400">
+                    Rating
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-lg font-semibold">
+                    {content.rating}
+                  </span>
+                  <div className="flex ml-2">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-3 w-3 ${
+                          i < Math.round(content.rating)
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-gray-500"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gray-700/50 rounded-lg p-3 border border-gray-600/50 flex flex-col items-center justify-center">
+                <div className="flex items-center justify-center mb-1">
+                  <Info className="h-4 w-4 mr-2 text-purple-400" />
+                  <span className="text-xs uppercase text-gray-400">
+                    Difficulty
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <div
+                    className={`w-3 h-3 rounded-full ${getDifficultyColor()} mr-2`}
+                  ></div>
+                  <span className="text-lg font-semibold">
+                    {content.difficulty}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center text-sm text-gray-400">
+              Created by:{" "}
+              <span className="font-medium text-gray-300">
+                {content.creator}
+              </span>
+            </div>
+
+            {/* Quiz Settings Info */}
+            <div className="bg-gray-900/70 p-4 rounded-lg border border-gray-700/50 backdrop-blur-sm">
+              <h3 className="font-semibold text-blue-400 mb-3 flex items-center">
+                <Timer className="h-4 w-4 mr-2" />
+                Quiz Settings
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div className="flex items-start">
+                  <div className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-1.5 mr-2"></div>
+                  <p className="text-gray-300">
+                    <span className="text-gray-400">Navigation:</span>{" "}
+                    {getNavigationModeDescription()}
+                  </p>
+                </div>
+
+                {content.hasTimer && (
+                  <div className="flex items-start">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 mr-2"></div>
+                    <p className="text-gray-300">
+                      <span className="text-gray-400">Time Limit:</span>{" "}
+                      {content.timeLimit} minutes
+                    </p>
+                  </div>
+                )}
+
+                {content.allowQuestionPicker && (
+                  <div className="flex items-start">
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 mr-2"></div>
+                    <p className="text-gray-300">
+                      <span className="text-gray-400">Navigation:</span>{" "}
+                      Question picker available
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex items-start">
+                  <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 mt-1.5 mr-2"></div>
+                  <p className="text-gray-300">
+                    <span className="text-gray-400">Questions:</span>{" "}
+                    {content.questions.length} total
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 justify-center pt-2">
+              <Button
+                size="lg"
+                onClick={handleStart}
+                className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-white px-8 py-4 text-lg shadow-lg shadow-blue-900/20 transform hover:scale-105 transition-all duration-200"
+              >
+                <Play className="h-5 w-5 mr-2" />
+                Start Quiz
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={handleShare}
+                className="border-gray-600 text-gray-300 hover:bg-gray-700/50 px-8 py-4 text-lg"
+              >
+                <Share2 className="h-5 w-5 mr-2" />
+                Share
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
