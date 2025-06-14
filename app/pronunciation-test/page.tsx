@@ -492,14 +492,14 @@ export default function PronunciationTestPage() {
   };
 
   const getScoreColor = (accuracy: number) => {
-    if (accuracy >= 80) return "text-green-600";
-    if (accuracy >= 60) return "text-yellow-600";
-    return "text-red-600";
+    if (accuracy >= 80) return "text-green-500";
+    if (accuracy >= 60) return "text-yellow-500";
+    return "text-red-500";
   };
 
   const getScoreBadgeVariant = (accuracy: number) => {
-    if (accuracy >= 80) return "default";
-    if (accuracy >= 60) return "secondary";
+    if (accuracy >= 80) return "success";
+    if (accuracy >= 60) return "warning";
     return "destructive";
   };
 
@@ -518,7 +518,7 @@ export default function PronunciationTestPage() {
             return (
               <span
                 key={letterIndex}
-                className={isCorrect ? "text-green-600" : "text-red-600"}
+                className={isCorrect ? "text-green-500" : "text-red-500"}
               >
                 {letter}
               </span>
@@ -533,55 +533,58 @@ export default function PronunciationTestPage() {
     totalAttempts > 0 ? Math.round(score / totalAttempts) : 0;
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className="container mx-auto px-4 py-6 max-w-7xl min-h-screen text-gray-100">
       <div className="space-y-4">
-        {/* Compact Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Pronunciation Test
-          </h1>
-          <p className="text-gray-600">
-            Practice your pronunciation with AI-powered feedback
-          </p>
-
-          {/* Inline Stats */}
-          <div className="flex justify-center gap-8 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-purple-600">
-                {averageScore}%
-              </span>
-              <span className="text-gray-500">Average</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-purple-600">
-                {totalAttempts}
-              </span>
-              <span className="text-gray-500">Attempts</span>
-            </div>
-          </div>
-        </div>
-
         {/* Main Content - Flex Layout */}
-        <div className="flex gap-6 items-start">
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
           {/* Left Panel - Controls */}
-          <Card className="w-80 flex-shrink-0">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Practice Options</CardTitle>
+          <Card className="w-full lg:w-80 flex-shrink-0 bg-gray-800/50 border-gray-700 backdrop-blur-sm shadow-xl">
+            <CardHeader className="pb-3 border-b border-gray-700/50">
+              <CardTitle className="text-lg text-gray-100">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-teal-400 via-blue-500 to-purple-600 text-transparent bg-clip-text">
+                  Pronunciation Test
+                </h1>
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               {/* Auto Generate */}
+              <div className="text-center space-y-2">
+                <p className="text-gray-400">
+                  Practice your pronunciation with AI-powered feedback
+                </p>
+
+                {/* Stats Cards */}
+                <div className="flex justify-center gap-8 mt-3">
+                  <div className="bg-gray-800/60 backdrop-blur-sm rounded-lg px-4 py-2 flex flex-col items-center border border-gray-700/50">
+                    <span className="text-2xl font-bold text-blue-400">
+                      {averageScore}%
+                    </span>
+                    <span className="text-xs text-gray-400">Average Score</span>
+                  </div>
+                  <div className="bg-gray-800/60 backdrop-blur-sm rounded-lg px-4 py-2 flex flex-col items-center border border-gray-700/50">
+                    <span className="text-2xl font-bold text-purple-400">
+                      {totalAttempts}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      Total Attempts
+                    </span>
+                  </div>
+                </div>
+              </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Auto Generate</Label>
+                <Label className="text-sm font-medium text-gray-300">
+                  Auto Generate
+                </Label>
                 <Select
                   value={difficulty}
                   onValueChange={(value: DifficultyLevel) =>
                     setDifficulty(value)
                   }
                 >
-                  <SelectTrigger className="h-9">
+                  <SelectTrigger className="h-9 bg-gray-900/70 border-gray-700 text-gray-200">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
                     <SelectItem value="EASY">Easy</SelectItem>
                     <SelectItem value="MEDIUM">Medium</SelectItem>
                     <SelectItem value="HARD">Hard</SelectItem>
@@ -591,7 +594,7 @@ export default function PronunciationTestPage() {
                 <Button
                   onClick={generateRandomSample}
                   disabled={isLoading}
-                  className="w-full h-9"
+                  className="w-full h-9 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white"
                   size="sm"
                 >
                   {isLoading ? (
@@ -603,25 +606,25 @@ export default function PronunciationTestPage() {
                 </Button>
               </div>
 
-              <Separator />
+              <Separator className="bg-gray-700/50" />
 
               {/* Custom Text */}
               <div className="space-y-2">
-                <Label className="text-sm font-medium">
+                <Label className="text-sm font-medium text-gray-300">
                   Custom Text (max 20 words)
                 </Label>
                 <Textarea
                   value={customText}
                   onChange={(e) => setCustomText(e.target.value)}
                   placeholder="Enter your own sentence..."
-                  className="min-h-[60px] text-sm"
+                  className="min-h-[60px] text-sm bg-gray-900/70 border-gray-700 text-gray-200 placeholder:text-gray-500"
                   rows={5}
                 />
                 <Button
                   onClick={useCustomText}
                   disabled={!customText.trim() || isLoading}
                   variant="outline"
-                  className="w-full h-9"
+                  className="w-full h-9 border-gray-600 text-gray-300 hover:bg-gray-700/50"
                   size="sm"
                 >
                   Use Custom Text
@@ -631,12 +634,12 @@ export default function PronunciationTestPage() {
               {/* Reset Button */}
               {currentSample && (
                 <>
-                  <Separator />
+                  <Separator className="bg-gray-700/50" />
                   <Button
                     onClick={resetTest}
                     variant="outline"
                     size="sm"
-                    className="w-full h-9"
+                    className="w-full h-9 border-gray-600 text-gray-300 hover:bg-gray-700/50"
                   >
                     <RotateCcw className="h-4 w-4 mr-2" />
                     Start New Test
@@ -647,29 +650,31 @@ export default function PronunciationTestPage() {
           </Card>
 
           {/* Right Panel - Practice Area */}
-          {currentSample && (
-            <Card className="flex-1">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Practice Text</CardTitle>
+          {currentSample ? (
+            <Card className="flex-1 bg-gray-800/50 border-gray-700 backdrop-blur-sm shadow-xl">
+              <CardHeader className="pb-3 border-b border-gray-700/50">
+                <CardTitle className="text-lg text-gray-100">
+                  Practice Text
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-4">
                 {/* Text Display */}
                 <div className="text-center space-y-3">
-                  <div className="text-xl font-medium leading-relaxed p-3 bg-gray-50 rounded-lg">
+                  <div className="text-xl font-medium leading-relaxed p-4 bg-gray-900/70 rounded-lg border border-gray-700/50 shadow-inner">
                     {renderColoredText()}
                   </div>
 
                   {/* IPA and Translation in same line */}
                   <div className="flex flex-col sm:flex-row justify-center items-center gap-2 text-sm">
-                    <div className="text-gray-600 font-mono">
+                    <div className="text-blue-300 font-mono">
                       / {currentSample.ipaTranscript} /
                     </div>
                     {currentSample.transcriptTranslation && (
                       <>
-                        <span className="hidden sm:inline text-gray-400">
+                        <span className="hidden sm:inline text-gray-500">
                           •
                         </span>
-                        <div className="text-gray-500 italic">
+                        <div className="text-gray-400 italic">
                           {currentSample.transcriptTranslation}
                         </div>
                       </>
@@ -684,6 +689,7 @@ export default function PronunciationTestPage() {
                     disabled={isPlayingReference}
                     variant="outline"
                     size="sm"
+                    className="border-gray-600 text-gray-300 hover:bg-gray-700/50"
                   >
                     {isPlayingReference ? (
                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -699,6 +705,7 @@ export default function PronunciationTestPage() {
                       disabled={isPlayingRecorded}
                       variant="outline"
                       size="sm"
+                      className="border-gray-600 text-gray-300 hover:bg-gray-700/50"
                     >
                       {isPlayingRecorded ? (
                         <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -716,7 +723,7 @@ export default function PronunciationTestPage() {
                     <Button
                       onClick={startRecording}
                       size="default"
-                      className="bg-red-600 hover:bg-red-700 text-white px-6 py-2"
+                      className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white px-6 py-2"
                     >
                       <Mic className="h-5 w-5 mr-2" />
                       Start Recording
@@ -728,7 +735,7 @@ export default function PronunciationTestPage() {
                       onClick={stopRecording}
                       size="default"
                       variant="destructive"
-                      className="px-6 py-2 animate-pulse"
+                      className="px-6 py-2 animate-pulse bg-red-600 hover:bg-red-700"
                     >
                       <Square className="h-5 w-5 mr-2" />
                       Stop Recording
@@ -736,7 +743,11 @@ export default function PronunciationTestPage() {
                   )}
 
                   {recordingState === "processing" && (
-                    <Button size="default" disabled className="px-6 py-2">
+                    <Button
+                      size="default"
+                      disabled
+                      className="px-6 py-2 bg-gray-700 text-gray-300"
+                    >
                       <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                       Analyzing...
                     </Button>
@@ -747,7 +758,7 @@ export default function PronunciationTestPage() {
                       onClick={() => startRecording()}
                       size="default"
                       variant="outline"
-                      className="px-6 py-2"
+                      className="px-6 py-2 border-gray-600 text-gray-300 hover:bg-gray-700/50"
                     >
                       <RotateCcw className="h-5 w-5 mr-2" />
                       Record Again
@@ -757,48 +768,50 @@ export default function PronunciationTestPage() {
 
                 {/* Results - Compact */}
                 {result && (
-                  <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="space-y-3 p-4 bg-gray-900/70 rounded-lg border border-gray-700/50 shadow-inner">
                     <div className="text-center">
                       <Badge
                         variant={getScoreBadgeVariant(
                           result.pronunciationAccuracy
                         )}
-                        className="text-base px-3 py-1"
+                        className="text-base px-4 py-1 bg-opacity-20 backdrop-blur-sm"
                       >
                         {result.pronunciationAccuracy}% Accuracy
                       </Badge>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <Label className="font-medium text-xs">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs mt-3">
+                      <div className="bg-gray-800/50 p-3 rounded-md border border-gray-700/30">
+                        <Label className="font-medium text-xs text-gray-400">
                           Reference IPA:
                         </Label>
-                        <div className="font-mono text-gray-600 mt-1">
+                        <div className="font-mono text-blue-300 mt-1">
                           / {result.realTranscriptsIpa} /
                         </div>
                       </div>
-                      <div>
-                        <Label className="font-medium text-xs">Your IPA:</Label>
-                        <div className="font-mono text-gray-600 mt-1">
+                      <div className="bg-gray-800/50 p-3 rounded-md border border-gray-700/30">
+                        <Label className="font-medium text-xs text-gray-400">
+                          Your IPA:
+                        </Label>
+                        <div className="font-mono text-purple-300 mt-1">
                           / {result.matchedTranscriptsIpa} /
                         </div>
                       </div>
                     </div>
 
-                    <div className="text-center text-sm">
+                    <div className="text-center text-sm mt-2">
                       {result.pronunciationAccuracy >= 80 ? (
-                        <div className="flex items-center justify-center text-green-600">
+                        <div className="flex items-center justify-center text-green-500 bg-green-900/20 py-2 px-3 rounded-md">
                           <CheckCircle className="h-4 w-4 mr-1" />
                           Excellent pronunciation!
                         </div>
                       ) : result.pronunciationAccuracy >= 60 ? (
-                        <div className="flex items-center justify-center text-yellow-600">
+                        <div className="flex items-center justify-center text-yellow-500 bg-yellow-900/20 py-2 px-3 rounded-md">
                           <CheckCircle className="h-4 w-4 mr-1" />
                           Good job! Keep practicing.
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center text-red-600">
+                        <div className="flex items-center justify-center text-red-500 bg-red-900/20 py-2 px-3 rounded-md">
                           <XCircle className="h-4 w-4 mr-1" />
                           Keep practicing to improve.
                         </div>
@@ -808,6 +821,13 @@ export default function PronunciationTestPage() {
                 )}
               </CardContent>
             </Card>
+          ) : (
+            <div className="flex-1 flex items-center justify-center h-64 bg-gray-800/30 border border-gray-700/50 rounded-lg backdrop-blur-sm">
+              <p className="text-gray-400 text-center">
+                Select a difficulty level and generate a sample to start
+                practicing
+              </p>
+            </div>
           )}
         </div>
       </div>
