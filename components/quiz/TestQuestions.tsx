@@ -119,7 +119,9 @@ export default function TestQuestions({
               isLast={index === questions.length - 1}
               onEdit={() => onEditQuestion(question)}
               onDelete={() => question.id && onDeleteQuestion(question.id)}
-              onMove={(direction) => onMoveQuestion(index, direction)}
+              onMove={(questionIndex, direction) =>
+                onMoveQuestion(index, direction)
+              }
               getDifficultyColor={getDifficultyColor}
               getQuestionTypeIcon={getQuestionTypeIcon}
             />

@@ -194,17 +194,6 @@ export default function TestSettings({
                 }
               />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Time Settings */}
-        <Card className="bg-gray-800/50 border border-gray-700 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl text-gray-100">
-              Time Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <Label className="text-gray-300">Enable Timer</Label>
@@ -265,34 +254,23 @@ export default function TestSettings({
                     }
                   />
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-gray-300">Allow Pause</Label>
-                    <p className="text-xs text-gray-400">
-                      Let students pause the timer
-                    </p>
-                  </div>
-                  <Switch
-                    checked={testData.allowPause}
-                    onCheckedChange={(checked) =>
-                      onTestInfoChange("allowPause", checked)
-                    }
-                  />
-                </div>
               </>
             )}
-          </CardContent>
-        </Card>
 
-        {/* Question Settings */}
-        <Card className="bg-gray-800/50 border border-gray-700 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl text-gray-100">
-              Question Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-gray-300">Allow Pause</Label>
+                <p className="text-xs text-gray-400">
+                  Let students pause the timer
+                </p>
+              </div>
+              <Switch
+                checked={testData.allowPause}
+                onCheckedChange={(checked) =>
+                  onTestInfoChange("allowPause", checked)
+                }
+              />
+            </div>
             <div className="flex items-center justify-between">
               <div>
                 <Label className="text-gray-300">Shuffle Questions</Label>
@@ -322,17 +300,6 @@ export default function TestSettings({
                 }
               />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Completion Settings */}
-        <Card className="bg-gray-800/50 border border-gray-700 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl text-gray-100">
-              Completion Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-gray-300">Maximum Attempts</Label>

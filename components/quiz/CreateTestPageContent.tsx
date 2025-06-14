@@ -956,7 +956,7 @@ export default function CreateTestPageContent({
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[length:24px_24px] -z-10"></div>
       <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-purple-600/20 rounded-full filter blur-3xl opacity-30 animate-pulse -z-10"></div>
       <div
-        className="absolute -top-32 -right-32 w-96 h-96 bg-blue-600/20 rounded-full filter blur-3xl opacity-30 animate-pulse -z-10"
+        className="absolute -top-32 right-32 w-96 h-96 bg-blue-600/20 rounded-full filter blur-3xl opacity-30 animate-pulse -z-10"
         style={{ animationDelay: "2s" }}
       ></div>
 
@@ -1018,70 +1018,6 @@ export default function CreateTestPageContent({
                 getDifficultyColor={getDifficultyColor}
                 getQuestionTypeIcon={getQuestionTypeIcon}
               />
-
-              {/* Add Question Library Dialog */}
-              <div className="flex gap-2">
-                <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="border-teal-500 text-teal-600 hover:bg-teal-50"
-                    >
-                      <Library className="h-4 w-4 mr-2" />
-                      Question Library
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>Question Library</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      {questionLibrary.map((question) => (
-                        <Card
-                          key={question.id + (question.createdAt || "")}
-                          className="border-gray-200"
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-2 mb-2">
-                                  <Badge
-                                    className={getDifficultyColor(
-                                      question.difficulty
-                                    )}
-                                  >
-                                    {question.difficulty}
-                                  </Badge>
-                                  <Badge variant="outline">
-                                    {question.category}
-                                  </Badge>
-                                  <Badge variant="outline">
-                                    {question.points} pts
-                                  </Badge>
-                                </div>
-                                <p className="text-gray-700 mb-2">
-                                  {question.text}
-                                </p>
-                                <div className="text-sm text-gray-500">
-                                  Type: {question.type.replace("-", " ")}
-                                </div>
-                              </div>
-                              <Button
-                                size="sm"
-                                onClick={() => addFromLibrary(question)}
-                                className="bg-teal-600 hover:bg-teal-700 text-white"
-                              >
-                                <Plus className="h-4 w-4 mr-1" />
-                                Add
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
             </TabsContent>
           </Tabs>
         </div>

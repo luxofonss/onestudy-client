@@ -319,7 +319,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[length:24px_24px] -z-10"></div>
           <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-purple-600/20 rounded-full filter blur-3xl opacity-30 animate-pulse -z-10"></div>
           <div
-            className="absolute -top-32 -right-32 w-96 h-96 bg-blue-600/20 rounded-full filter blur-3xl opacity-30 animate-pulse -z-10"
+            className="absolute -top-32 right-32 w-96 h-96 bg-blue-600/20 rounded-full filter blur-3xl opacity-30 animate-pulse -z-10"
             style={{ animationDelay: "2s" }}
           ></div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center relative z-[1]">
@@ -409,7 +409,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[length:24px_24px] -z-10"></div>
           <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-purple-600/20 rounded-full filter blur-3xl opacity-30 animate-pulse -z-10"></div>
           <div
-            className="absolute -top-32 -right-32 w-96 h-96 bg-blue-600/20 rounded-full filter blur-3xl opacity-30 animate-pulse -z-10"
+            className="absolute -top-32 right-32 w-96 h-96 bg-blue-600/20 rounded-full filter blur-3xl opacity-30 animate-pulse -z-10"
             style={{ animationDelay: "2s" }}
           ></div>
 
@@ -477,7 +477,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.08)_1px,transparent_1px)] bg-[length:24px_24px] -z-10"></div>
           <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-purple-600/20 rounded-full filter blur-3xl opacity-30 animate-pulse -z-10"></div>
           <div
-            className="absolute -top-32 -right-32 w-96 h-96 bg-blue-600/20 rounded-full filter blur-3xl opacity-30 animate-pulse -z-10"
+            className="absolute -top-32 right-32 w-96 h-96 bg-blue-600/20 rounded-full filter blur-3xl opacity-30 animate-pulse -z-10"
             style={{ animationDelay: "2s" }}
           ></div>
 

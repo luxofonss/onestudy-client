@@ -56,7 +56,7 @@ interface QuestionItemProps {
   isLast: boolean;
   onEdit: (question: Question) => void;
   onDelete: (id: string) => void;
-  onMove: (index: number, direction: "up" | "down") => void;
+  onMove: (direction: "up" | "down") => void;
   getQuestionTypeIcon: (type: string) => string;
   getDifficultyColor: (difficulty: string) => string;
 }
@@ -229,7 +229,7 @@ export default function QuestionItem({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onMove(index, "up")}
+                onClick={() => onMove("up")}
                 disabled={isFirst}
                 className="h-8 w-8 rounded-full bg-gray-700/50 text-gray-300 hover:text-white hover:bg-gray-700"
               >
@@ -238,7 +238,7 @@ export default function QuestionItem({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onMove(index, "down")}
+                onClick={() => onMove("down")}
                 disabled={isLast}
                 className="h-8 w-8 rounded-full bg-gray-700/50 text-gray-300 hover:text-white hover:bg-gray-700"
               >
