@@ -240,6 +240,7 @@ class QuizService {
 
   async updateQuiz(quiz: IQuiz): Promise<IApiResponse<IQuiz>> {
     try {
+      console.log("quiz:: ", quiz)
       return await httpClient.put<IApiResponse<IQuiz>>("/quizzes", quiz, true)
     } catch (error) {
       return {

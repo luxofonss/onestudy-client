@@ -122,6 +122,7 @@ export class HttpClient {
 
 
   async put<T>(endpoint: string, data?: any, requireAuth = false): Promise<T> {
+    console.log("JSON.stringify(data):: ", JSON.stringify(data))
     return this.request<T>(
       endpoint,
       {

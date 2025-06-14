@@ -10,9 +10,11 @@ import { SearchAndFilter } from "@/components/ui/search-and-filter";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { quizService } from "@/lib/services/quiz-service";
 import type { IQuiz, IQuizFilters } from "@/lib/types/api-types";
-import { withAuth } from "@/lib/hooks/with-auth";
 import { useSearchParams, useRouter } from "next/navigation";
 import { SUCCESS_CODE } from "@/lib/constants";
+import { BookOpen, Library, User, Search, Filter, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 // Dynamic imports for better performance
 const LoadingSkeleton = dynamic(
@@ -179,15 +181,27 @@ export default function LibraryPage() {
   // Render functions
   const renderEmptyState = useCallback(
     (title: string, description: string) => (
-      <div className="text-center py-12">
-        <div className="bg-white border border-gray-200 rounded-lg p-8 max-w-md mx-auto">
-          <div className="h-12 w-12 text-gray-400 mx-auto mb-4">📚</div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-          <p className="text-gray-500 text-sm">{description}</p>
+      <div className="flex items-center justify-center py-16">
+        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-8 max-w-md mx-auto backdrop-blur-sm">
+          <div className="h-16 w-16 bg-gray-700/70 text-teal-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+            {activeTab === "saved" ? "📌" : activeTab === "my" ? "✏️" : "🔍"}
+          </div>
+          <h3 className="text-xl font-medium text-white mb-2 text-center">
+            {title}
+          </h3>
+          <p className="text-gray-400 text-center">{description}</p>
+          {activeTab === "my" && (
+            <Button
+              className="mt-4 w-full bg-teal-600 hover:bg-teal-700 text-white"
+              onClick={() => router.push("/create")}
+            >
+              Create Your First Quiz
+            </Button>
+          )}
         </div>
       </div>
     ),
-    []
+    [activeTab, router]
   );
 
   const renderQuizGrid = useCallback(
@@ -198,7 +212,12 @@ export default function LibraryPage() {
       showAnalyticsButton = false
     ) => {
       if (isLoading) {
-        return <LoadingSkeleton count={6} />;
+        return (
+          <div className="flex flex-col items-center justify-center py-16">
+            <Loader2 className="h-10 w-10 text-teal-500 animate-spin mb-4" />
+            <p className="text-gray-400">Loading quizzes...</p>
+          </div>
+        );
       }
 
       if (!Array.isArray(quizzes) || quizzes.length === 0) {
@@ -224,7 +243,7 @@ export default function LibraryPage() {
       }
 
       return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {quizzes.map((quiz) => {
             if (!quiz?.id) return null;
 
@@ -261,46 +280,74 @@ export default function LibraryPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-white">
-      <div className="container mx-auto px-4 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-950 to-gray-900">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(65,70,120,0.15),rgba(20,20,50,0.2))] pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[length:24px_24px] pointer-events-none"></div>
+
+      <div className="container mx-auto px-4 py-8 relative z-10">
         <PageHeader
-          title="Quiz Library"
+          title={
+            <div className="flex items-center gap-2 text-white">
+              <Library className="h-8 w-8 text-teal-500" />
+              <span>Quiz Library</span>
+            </div>
+          }
           description="Discover, save, and manage English learning quizzes"
           className="mb-6"
         />
 
-        <SearchAndFilter
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          className="mb-6"
-        />
+        <div className="mb-6">
+          <SearchAndFilter
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            className="mb-0"
+          />
+        </div>
 
         <Tabs
           value={activeTab}
           onValueChange={handleTabChange}
           className="w-full"
         >
-          <TabsList className="bg-gray-100 border border-gray-200 mb-6">
-            <TabsTrigger
-              value="public"
-              className="data-[state=active]:bg-white data-[state=active]:text-purple-600 text-gray-600"
-            >
-              Public Quizzes
-            </TabsTrigger>
-            <TabsTrigger
-              value="saved"
-              className="data-[state=active]:bg-white data-[state=active]:text-purple-600 text-gray-600"
-            >
-              Saved Quizzes (
-              {activeTab === "saved" ? quizzes.length : savedQuizIds.length})
-            </TabsTrigger>
-            <TabsTrigger
-              value="my"
-              className="data-[state=active]:bg-white data-[state=active]:text-purple-600 text-gray-600"
-            >
-              My Quizzes
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center justify-between mb-6">
+            <TabsList className="bg-gray-800/70 border border-gray-700 p-1">
+              <TabsTrigger
+                value="public"
+                className="data-[state=active]:bg-teal-600 data-[state=active]:text-white text-gray-300 flex items-center gap-2"
+              >
+                <BookOpen className="h-4 w-4" />
+                Public Quizzes
+              </TabsTrigger>
+              <TabsTrigger
+                value="saved"
+                className="data-[state=active]:bg-teal-600 data-[state=active]:text-white text-gray-300 flex items-center gap-2"
+              >
+                <Badge
+                  variant="outline"
+                  className="h-5 w-5 p-0 flex items-center justify-center border-gray-600 text-xs font-normal"
+                >
+                  {activeTab === "saved" ? quizzes.length : savedQuizIds.length}
+                </Badge>
+                Saved Quizzes
+              </TabsTrigger>
+              <TabsTrigger
+                value="my"
+                className="data-[state=active]:bg-teal-600 data-[state=active]:text-white text-gray-300 flex items-center gap-2"
+              >
+                <User className="h-4 w-4" />
+                My Quizzes
+              </TabsTrigger>
+            </TabsList>
+
+            {activeTab === "my" && (
+              <Button
+                onClick={() => router.push("/create")}
+                className="bg-teal-600 hover:bg-teal-700 text-white"
+              >
+                Create New Quiz
+              </Button>
+            )}
+          </div>
 
           <TabsContent value="public" className="mt-0">
             {renderQuizGrid(filteredQuizzes, true, false)}
