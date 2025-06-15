@@ -98,7 +98,7 @@ type QuestionType =
   | "TRUE_FALSE"
   | "PRONUNCIATION"
   | "LISTENING";
-type DifficultyLevel = "Intermediate" | "Advanced" | "Beginner";
+type DifficultyLevel = "INTERMEDIATE" | "ADVANCED" | "BEGINNER";
 type NavigationMode = "sequential" | "back-only" | "free-navigation";
 
 const mapApiQuestionToState = (question: IQuestion) => {
@@ -155,11 +155,14 @@ const mapApiQuizToState = (quiz: IQuizContent): IQuiz => {
     id: quiz.id,
     title: quiz.title,
     description: quiz.description,
-    creator: "Unknown", // TODO: Add author name when available
+    author: {
+      name: quiz?.author?.name,
+      email: quiz?.author?.email,
+    },
     participants: quiz.attempts,
     rating: quiz.rating,
     duration: quiz.duration ? `${quiz.duration} min` : "N/A",
-    difficulty: (quiz.difficulty || "Intermediate") as DifficultyLevel,
+    difficulty: (quiz.difficulty || "BEGINNER") as DifficultyLevel,
     navigationMode: quiz.navigationMode
       .toLowerCase()
       .replace("_", "-") as NavigationMode,
@@ -246,11 +249,11 @@ export default function InteractionPage() {
     if (!content?.difficulty) return "bg-blue-500";
 
     switch (content.difficulty.toLowerCase()) {
-      case "beginner":
+      case "BEGINNER":
         return "bg-green-500";
-      case "intermediate":
+      case "INTERMEDIATE":
         return "bg-blue-500";
-      case "advanced":
+      case "ADVANCED":
         return "bg-purple-500";
       default:
         return "bg-blue-500";
@@ -310,11 +313,11 @@ export default function InteractionPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 text-gray-100">
       <div className="container mx-auto px-4 py-8 max-w-6xl animate-fade-in">
-        <Card className="border-gray-700 bg-gray-800/50 backdrop-blur-sm shadow-xl">
+        <Card className="border-gray-700 mt-4 bg-gray-800/50 backdrop-blur-sm shadow-xl">
           <CardHeader className="pb-2 relative">
             <div className="absolute -top-10 left-1/2 transform -translate-x-1/2">
-              <div className="w-20 h-20 bg-gradient-to-br from-teal-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg border-4 border-gray-800">
-                <BookOpen className="h-10 w-10 text-white" />
+              <div className="w-16 h-16 bg-gradient-to-br from-teal-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg border-4 border-gray-800">
+                <BookOpen className="h-8 w-8 text-white" />
               </div>
             </div>
 
@@ -339,7 +342,7 @@ export default function InteractionPage() {
                   </span>
                 </div>
                 <span className="text-lg font-semibold">
-                  {content.duration}
+                  {content.timeLimit} minutes
                 </span>
               </div>
 
@@ -402,7 +405,7 @@ export default function InteractionPage() {
             <div className="text-center text-sm text-gray-400">
               Created by:{" "}
               <span className="font-medium text-gray-300">
-                {content.creator}
+                {content.author.name}
               </span>
             </div>
 

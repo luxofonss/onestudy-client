@@ -71,6 +71,7 @@ export const mapApiQuestions = (apiQuestions: any[]): Question[] => {
                question.correctAnswers = q.correctAnswers || [];
           } else if (questionType === "pronunciation") {
                question.pronunciationText = q.pronunciationText || "";
+               question.acceptRate = q.acceptRate || 70;
           }
 
           // Add media if present
@@ -130,7 +131,8 @@ export const convertToApiNavigationMode = (componentMode: string): string => {
 export const mapToApiQuestions = (componentQuestions: Question[]): any[] => {
      return componentQuestions.map((q) => {
           // Generate a unique ID if the question doesn't have one
-          const questionId = q.id || null;
+          // If ID starts with NEW_, set it to null for API
+          const questionId = q.id && q.id.startsWith("NEW_") ? null : q.id;
 
           const apiQuestion: any = {
                id: questionId,
@@ -152,6 +154,7 @@ export const mapToApiQuestions = (componentQuestions: Question[]): any[] => {
                apiQuestion.correctAnswers = q.correctAnswers;
           } else if (q.type === "pronunciation") {
                apiQuestion.pronunciationText = q.pronunciationText;
+               apiQuestion.acceptRate = q.acceptRate || 70;
           }
 
           // Add media if present
@@ -175,6 +178,7 @@ export const updateQuiz = async (quizData: TestData): Promise<any> => {
                status: quizData.status.toUpperCase(),
                tags: quizData.tags,
                duration: quizData.estimatedDuration,
+               difficulty: quizData.difficulty ? convertToApiDifficulty(quizData.difficulty) : undefined,
                // Enhanced quiz settings
                navigationMode: convertToApiNavigationMode(quizData.navigationMode),
                hasTimer: quizData.hasTimer,

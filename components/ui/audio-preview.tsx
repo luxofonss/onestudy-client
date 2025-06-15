@@ -88,13 +88,13 @@ export function AudioPreview({
   if (compact) {
     return (
       <div
-        className={`flex items-center gap-2 p-2 bg-purple-50 rounded border border-purple-200 ${className}`}
+        className={`flex items-center gap-2 p-2 bg-gray-800/70 rounded border border-gray-700/50 ${className}`}
       >
         <Button
           variant="ghost"
           size="sm"
           onClick={togglePlay}
-          className="h-8 w-8 p-0 text-purple-600 hover:bg-purple-100"
+          className="h-8 w-8 p-0 text-blue-400 hover:bg-gray-700/50"
         >
           {isPlaying ? (
             <Pause className="h-3 w-3" />
@@ -102,11 +102,11 @@ export function AudioPreview({
             <Play className="h-3 w-3" />
           )}
         </Button>
-        <Volume2 className="h-3 w-3 text-purple-600" />
-        <span className="text-xs text-purple-700 flex-1 truncate">
+        <Volume2 className="h-3 w-3 text-blue-400" />
+        <span className="text-xs text-gray-300 flex-1 truncate">
           Audio file
         </span>
-        <span className="text-xs text-purple-600">{formatTime(duration)}</span>
+        <span className="text-xs text-gray-400">{formatTime(duration)}</span>
         <audio ref={audioRef} src={audioUrl} className="hidden" />
       </div>
     );

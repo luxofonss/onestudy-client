@@ -34,15 +34,11 @@ import {
 
 interface Question {
   id?: string | null;
-  type:
-    | "multiple-choice"
-    | "pronunciation"
-    | "fill-in-the-blank"
-    | "essay"
-    | "listening";
+  type: "multiple-choice" | "pronunciation" | "fill-in-the-blank";
   text: string;
   options?: { id?: string; text: string; isCorrect: boolean }[];
   pronunciationText?: string;
+  acceptRate?: number;
   correctAnswers?: string[];
   trueFalseAnswer?: boolean;
   audioUrl?: string;
@@ -249,6 +245,9 @@ export default function QuestionFormModal({
                             { text: "", isCorrect: false },
                           ],
                         }),
+                      ...(value === "pronunciation" && {
+                        acceptRate: currentQuestion.acceptRate || 70,
+                      }),
                     })
                   }
                 >
@@ -507,62 +506,67 @@ export default function QuestionFormModal({
 
               {/* Pronunciation */}
               {currentQuestion.type === "pronunciation" && (
-                <div>
-                  <Label
-                    htmlFor="pronunciationText"
-                    className="text-xs font-medium"
-                  >
-                    Text to Pronounce
-                  </Label>
-                  <Input
-                    id="pronunciationText"
-                    value={currentQuestion.pronunciationText || ""}
-                    onChange={(e) =>
-                      setCurrentQuestion({
-                        ...currentQuestion,
-                        pronunciationText: e.target.value,
-                      })
-                    }
-                    placeholder="Text that the student needs to pronounce"
-                    className="mt-1 bg-gray-800 border-gray-700 text-sm"
-                  />
-                  {errors.pronunciationText && (
-                    <p className="text-red-400 text-xs mt-1">
-                      {errors.pronunciationText}
-                    </p>
-                  )}
-                </div>
-              )}
+                <div className="space-y-3">
+                  <div>
+                    <Label
+                      htmlFor="pronunciationText"
+                      className="text-xs font-medium"
+                    >
+                      Text to Pronounce
+                    </Label>
+                    <Input
+                      id="pronunciationText"
+                      value={currentQuestion.pronunciationText || ""}
+                      onChange={(e) =>
+                        setCurrentQuestion({
+                          ...currentQuestion,
+                          pronunciationText: e.target.value,
+                        })
+                      }
+                      placeholder="Text that the student needs to pronounce"
+                      className="mt-1 bg-gray-800 border-gray-700 text-sm"
+                    />
+                    {errors.pronunciationText && (
+                      <p className="text-red-400 text-xs mt-1">
+                        {errors.pronunciationText}
+                      </p>
+                    )}
+                  </div>
 
-              {/* Listening */}
-              {currentQuestion.type === "listening" && (
-                <div>
-                  <Label
-                    htmlFor="maxListeningTime"
-                    className="text-xs font-medium"
-                  >
-                    Maximum Listening Time (seconds)
-                  </Label>
-                  <Input
-                    id="maxListeningTime"
-                    type="number"
-                    min="1"
-                    max="300"
-                    value={currentQuestion.maxListeningTime || ""}
-                    onChange={(e) =>
-                      setCurrentQuestion({
-                        ...currentQuestion,
-                        maxListeningTime: parseInt(e.target.value) || undefined,
-                      })
-                    }
-                    placeholder="e.g., 30"
-                    className="mt-1 bg-gray-800 border-gray-700 text-sm"
-                  />
-                  {errors.maxListeningTime && (
-                    <p className="text-red-400 text-xs mt-1">
-                      {errors.maxListeningTime}
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <Label
+                        htmlFor="acceptRate"
+                        className="text-xs font-medium"
+                      >
+                        Accept Rate (0-100)
+                      </Label>
+                      <Badge className="bg-purple-900/30 text-purple-300 border-purple-700/50">
+                        {currentQuestion.acceptRate || 70}%
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="acceptRate"
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="5"
+                        value={currentQuestion.acceptRate || 70}
+                        onChange={(e) =>
+                          setCurrentQuestion({
+                            ...currentQuestion,
+                            acceptRate: parseInt(e.target.value),
+                          })
+                        }
+                        className="mt-1 bg-gray-800 border-gray-700 accent-purple-500"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Minimum score required to accept the pronunciation (lower
+                      = more lenient)
                     </p>
-                  )}
+                  </div>
                 </div>
               )}
             </div>

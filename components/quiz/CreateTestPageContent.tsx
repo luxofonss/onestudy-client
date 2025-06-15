@@ -584,6 +584,9 @@ export default function CreateTestPageContent({
           authorId: quizData.authorId || null,
           version: 1,
           status: quizData.status?.toLowerCase() || "draft",
+          difficulty: quizData.difficulty
+            ? convertDifficulty(quizData.difficulty)
+            : "beginner",
           // Enhanced quiz settings with defaults or API values
           navigationMode: convertNavigationMode(
             quizData.navigationMode || "FREE_NAVIGATION"
@@ -620,7 +623,7 @@ export default function CreateTestPageContent({
     // Prevent adding duplicates from the library
     const newQuestion = {
       ...question,
-      id: null,
+      id: `NEW_${Date.now()}`, // Generate a temporary ID with NEW_ prefix
     };
 
     setTestData({
@@ -656,13 +659,16 @@ export default function CreateTestPageContent({
     } else {
       // Add new question
       const newQuestion: Question = {
-        id: null,
+        id: `NEW_${Date.now()}`, // Generate a temporary ID with NEW_ prefix
         type: currentQuestion.type || "multiple-choice",
         text: currentQuestion.text || "",
         options: currentQuestion.options || [],
         points: currentQuestion.points || 1,
         difficulty: currentQuestion.difficulty || "beginner",
         category: currentQuestion.category || "",
+        ...(currentQuestion.type === "pronunciation" && {
+          acceptRate: currentQuestion.acceptRate || 70,
+        }),
         ...currentQuestion,
       };
       setTestData({
@@ -775,6 +781,9 @@ export default function CreateTestPageContent({
                 authorId: quizData.authorId || null,
                 version: 1,
                 status: quizData.status?.toLowerCase() || "draft",
+                difficulty: quizData.difficulty
+                  ? convertDifficulty(quizData.difficulty)
+                  : "beginner",
                 navigationMode: convertNavigationMode(
                   quizData.navigationMode || "FREE_NAVIGATION"
                 ),
@@ -1011,7 +1020,10 @@ export default function CreateTestPageContent({
               <TestQuestions
                 questions={testData.questions}
                 onAddQuestion={openAddModal}
-                onOpenLibrary={() => setIsLibraryOpen(true)}
+                onOpenLibrary={() => {
+                  console.log("Opening library modal");
+                  setIsLibraryOpen(true);
+                }}
                 onEditQuestion={openEditModal}
                 onDeleteQuestion={deleteQuestion}
                 onMoveQuestion={moveQuestion}
@@ -1046,6 +1058,107 @@ export default function CreateTestPageContent({
         onClose={closePreview}
         testData={testData}
       />
+
+      {/* Question Library Modal */}
+      {console.log("isLibraryOpen:", isLibraryOpen)}
+      <Dialog open={isLibraryOpen} onOpenChange={setIsLibraryOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-900 border border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-white">
+              Question Library
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Browse and select questions to add to your quiz
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 my-4">
+            {questionLibrary.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-400">
+                  No questions available in the library
+                </p>
+              </div>
+            ) : (
+              questionLibrary.map((question) => (
+                <Card
+                  key={question.id}
+                  className="bg-gray-800/70 border border-gray-700 hover:border-teal-700/50 transition-colors"
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className="w-8 h-8 bg-gray-700/70 rounded flex items-center justify-center">
+                            {getQuestionTypeIcon(question.type)}
+                          </div>
+                          <Badge
+                            className={getDifficultyColor(question.difficulty)}
+                          >
+                            {question.difficulty}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className="border-gray-600 text-gray-300"
+                          >
+                            {question.category}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className="border-teal-700/30 text-teal-400 bg-teal-900/20"
+                          >
+                            {question.points} pts
+                          </Badge>
+                        </div>
+
+                        <h3 className="text-white font-medium mb-2">
+                          {question.text}
+                        </h3>
+
+                        {question.type === "multiple-choice" &&
+                          question.options && (
+                            <div className="space-y-1 mt-2">
+                              {question.options.map((option, idx) => (
+                                <div
+                                  key={idx}
+                                  className={`text-sm p-2 rounded-md ${
+                                    option.isCorrect
+                                      ? "bg-green-900/20 text-green-300 border border-green-700/30"
+                                      : "bg-gray-800 text-gray-300 border border-gray-700"
+                                  }`}
+                                >
+                                  {option.text}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                      </div>
+
+                      <Button
+                        onClick={() => addFromLibrary(question)}
+                        className="bg-teal-700 hover:bg-teal-600 text-white ml-4 shrink-0"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add to Quiz
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsLibraryOpen(false)}
+              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

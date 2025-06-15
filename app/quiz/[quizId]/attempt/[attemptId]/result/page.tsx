@@ -8,6 +8,10 @@ import {
   Clock,
   CheckCircle,
   Home,
+  XCircle,
+  Volume2,
+  Loader2,
+  Play,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +41,12 @@ const formatTimeSpent = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = seconds % 60;
   return `${minutes} min ${remainingSeconds} sec`;
+};
+
+const calculateTimeSpent = (completedAt: string, createdAt: string): number => {
+  const completedTime = new Date(completedAt).getTime();
+  const createdTime = new Date(createdAt).getTime();
+  return Math.floor((completedTime - createdTime) / 1000); // Convert ms to seconds
 };
 
 const getPerformanceText = (score: number): string => {
@@ -73,6 +83,9 @@ export default function QuizResultsPage() {
   const paramsValue = useParams();
   const quizId = paramsValue.quizId as string;
   const attemptId = paramsValue.attemptId as string;
+  const [isPlayingReference, setIsPlayingReference] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -114,6 +127,12 @@ export default function QuizResultsPage() {
       0
     ) || 0;
   const scorePercent = (attempt?.score ?? 0 / quizMaxScore) * 100 || 0;
+  // Calculate time spent based on completedAt and createdAt
+  const timeSpentSeconds =
+    attempt?.completedAt && attempt?.createdAt
+      ? calculateTimeSpent(attempt.completedAt, attempt.createdAt)
+      : attempt?.timeSpent || 0;
+
   const results = {
     quizId: quizId,
     quizTitle: quiz?.title || "Loading...",
@@ -123,7 +142,7 @@ export default function QuizResultsPage() {
     correctAnswers: attempt?.correctAnswers || 0,
     incorrectAnswers:
       (quiz?.questions?.length || 0) - (attempt?.correctAnswers || 0),
-    timeSpent: formatTimeSpent(attempt?.timeSpent || 0),
+    timeSpent: formatTimeSpent(timeSpentSeconds),
     accuracy: attempt
       ? Math.round((attempt.correctAnswers / quiz?.questions?.length) * 100)
       : 0,
@@ -179,6 +198,25 @@ export default function QuizResultsPage() {
           case "pronunciation":
             correctAnswer = question.pronunciationText || null;
             userAnswer = answer.answerText || null;
+
+            // Try to parse the pronunciation data
+            let pronunciationData = null;
+            if (answer.answerText && typeof answer.answerText === "string") {
+              try {
+                pronunciationData = JSON.parse(answer.answerText);
+                // Update score from the parsed data if available
+                if (
+                  pronunciationData &&
+                  typeof pronunciationData.pronunciationAccuracy === "number"
+                ) {
+                  answer.scoreAchieved =
+                    pronunciationData.pronunciationAccuracy;
+                }
+              } catch (e) {
+                console.error("Failed to parse pronunciation data:", e);
+              }
+            }
+
             isCorrect = answer.correct || false;
             break;
           case "true_false":
@@ -315,7 +353,39 @@ export default function QuizResultsPage() {
     }
   };
 
+  const playReferenceAudio = (text: string, questionId: string) => {
+    if (!text || isPlayingReference[questionId]) return;
+
+    // Update state to show loading
+    setIsPlayingReference((prev) => ({ ...prev, [questionId]: true }));
+
+    // Create speech synthesis utterance
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.8;
+    utterance.onend = () => {
+      setIsPlayingReference((prev) => ({ ...prev, [questionId]: false }));
+    };
+
+    // Speak the text
+    speechSynthesis.speak(utterance);
+  };
+
   const renderPronunciationResult = (result: any) => {
+    // Parse the JSON data from answerText if it exists
+    let pronunciationData: any = null;
+
+    console.log("Pronunciation result:", result);
+    console.log("Raw userAnswer:", result.userAnswer);
+
+    if (result.userAnswer && typeof result.userAnswer === "string") {
+      try {
+        pronunciationData = JSON.parse(result.userAnswer);
+        console.log("Parsed pronunciation data:", pronunciationData);
+      } catch (e) {
+        console.error("Failed to parse pronunciation data:", e);
+      }
+    }
+
     return (
       <div className="space-y-4">
         {/* Audio Controls */}
@@ -331,7 +401,9 @@ export default function QuizResultsPage() {
                 </Badge>
               </div>
               {result.userAudioUrl && (
-                <AudioPreview audioUrl={result.userAudioUrl} compact />
+                <div className="bg-gray-800/70 rounded border border-gray-700/50">
+                  <AudioPreview audioUrl={result.userAudioUrl} compact />
+                </div>
               )}
             </CardContent>
           </Card>
@@ -346,79 +418,233 @@ export default function QuizResultsPage() {
                   Reference
                 </Badge>
               </div>
-              {result.correctAudioUrl && (
-                <AudioPreview audioUrl={result.correctAudioUrl} compact />
+              {result.correctAudioUrl ? (
+                <div className="bg-gray-800/70 rounded border border-gray-700/50">
+                  <AudioPreview audioUrl={result.correctAudioUrl} compact />
+                </div>
+              ) : (
+                <div className="flex justify-center mt-2">
+                  <Button
+                    onClick={() =>
+                      playReferenceAudio(
+                        pronunciationData?.realTranscripts,
+                        result.questionId
+                      )
+                    }
+                    disabled={isPlayingReference[result.questionId]}
+                    variant="outline"
+                    size="sm"
+                    className="border-gray-600 text-gray-300 hover:bg-gray-700/50"
+                  >
+                    {isPlayingReference[result.questionId] ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <Volume2 className="h-4 w-4 mr-1" />
+                    )}
+                    Play Reference
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Text with Word-by-Word Analysis */}
-        <div className="space-y-2">
-          <h4 className="font-medium text-gray-300 text-sm">
-            Word-by-Word Analysis:
-          </h4>
-          <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-700/50">
-            <div className="flex flex-wrap gap-2">
-              {result.wordAnalysis.map((word: any, index: number) => (
-                <span
-                  key={index}
-                  className={`px-2 py-1 rounded-md border font-mono text-sm ${
-                    word.correct
-                      ? "bg-green-900/30 text-green-400 border-green-700/50"
-                      : "bg-red-900/30 text-red-400 border-red-700/50"
-                  }`}
-                  title={`Score: ${word.score}%`}
-                >
-                  {word.word}
-                  {!word.correct && <span className="ml-1 text-xs">❌</span>}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Detailed Phonetic Analysis */}
-        <div className="space-y-2">
-          <h4 className="font-medium text-gray-300 text-sm">
-            Phonetic Analysis:
-          </h4>
-          <div className="space-y-2">
-            {result.wordAnalysis.map((word: any, index: number) => (
-              <div
-                key={index}
-                className={`p-3 rounded-lg border ${getWordScoreColor(
-                  word.score
-                )}`}
+        {/* Pronunciation Analysis - Based on pronunciation-test page */}
+        {pronunciationData && (
+          <div className="space-y-3 p-4 bg-gray-900/70 rounded-lg border border-gray-700/50 shadow-inner">
+            <div className="text-center">
+              <Badge
+                className={getPerformanceColor(
+                  pronunciationData.pronunciationAccuracy
+                )}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-sm">{word.word}</span>
-                  <Badge variant="outline" className="border-current text-xs">
-                    {word.score}%
-                  </Badge>
+                {pronunciationData.pronunciationAccuracy}% Accuracy
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs mt-3">
+              <div className="bg-gray-800/50 p-3 rounded-md border border-gray-700/30">
+                <h4 className="font-medium text-xs text-gray-400">
+                  Reference Text:
+                </h4>
+                <div className="font-mono text-blue-300 mt-1">
+                  {pronunciationData.realTranscripts ||
+                    result.pronunciationText}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="font-medium text-gray-300">
-                      Your pronunciation:
-                    </span>
-                    <div className="font-mono bg-gray-900/50 p-2 rounded mt-1 text-gray-300">
-                      {word.userPronunciation}
+                {pronunciationData.realTranscriptsIpa && (
+                  <>
+                    <h4 className="font-medium text-xs text-gray-400 mt-2">
+                      Reference IPA:
+                    </h4>
+                    <div className="font-mono text-blue-300 mt-1">
+                      / {pronunciationData.realTranscriptsIpa} /
                     </div>
-                  </div>
-                  <div>
-                    <span className="font-medium text-gray-300">
-                      Correct pronunciation:
-                    </span>
-                    <div className="font-mono bg-gray-900/50 p-2 rounded mt-1 text-gray-300">
-                      {word.correctPronunciation}
+                  </>
+                )}
+              </div>
+              <div className="bg-gray-800/50 p-3 rounded-md border border-gray-700/30">
+                <h4 className="font-medium text-xs text-gray-400">
+                  Your Text:
+                </h4>
+                <div className="font-mono text-purple-300 mt-1">
+                  {pronunciationData.matchedTranscripts ||
+                    "No transcription available"}
+                </div>
+                {pronunciationData.matchedTranscriptsIpa && (
+                  <>
+                    <h4 className="font-medium text-xs text-gray-400 mt-2">
+                      Your IPA:
+                    </h4>
+                    <div className="font-mono text-purple-300 mt-1">
+                      / {pronunciationData.matchedTranscriptsIpa} /
                     </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Word-by-Word Analysis */}
+            {pronunciationData.isLetterCorrectAllWords && (
+              <div className="space-y-2 mt-3">
+                <h4 className="font-medium text-gray-300 text-sm">
+                  Word-by-Word Analysis:
+                </h4>
+                <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-700/50">
+                  <div className="flex flex-wrap gap-2">
+                    {pronunciationData.realTranscripts
+                      .split(" ")
+                      .map((word: string, wordIndex: number) => {
+                        const correctnessPattern =
+                          pronunciationData.isLetterCorrectAllWords.split(" ")[
+                            wordIndex
+                          ];
+                        const isFullyCorrect =
+                          correctnessPattern &&
+                          !correctnessPattern.includes("0");
+
+                        return (
+                          <span
+                            key={wordIndex}
+                            className={`px-2 py-1 rounded-md border font-mono text-sm ${
+                              isFullyCorrect
+                                ? "bg-green-900/30 text-green-400 border-green-700/50"
+                                : "bg-red-900/30 text-red-400 border-red-700/50"
+                            }`}
+                          >
+                            {word}
+                            {!isFullyCorrect && (
+                              <span className="ml-1 text-xs">❌</span>
+                            )}
+                          </span>
+                        );
+                      })}
                   </div>
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Feedback message */}
+            <div className="text-center text-sm mt-2">
+              {pronunciationData.pronunciationAccuracy >= 80 ? (
+                <div className="flex items-center justify-center text-green-500 bg-green-900/20 py-2 px-3 rounded-md">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Excellent pronunciation!
+                </div>
+              ) : pronunciationData.pronunciationAccuracy >= 60 ? (
+                <div className="flex items-center justify-center text-yellow-500 bg-yellow-900/20 py-2 px-3 rounded-md">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Good job! Keep practicing.
+                </div>
+              ) : (
+                <div className="flex items-center justify-center text-red-500 bg-red-900/20 py-2 px-3 rounded-md">
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Keep practicing to improve.
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Original Word Analysis Section - Keep as fallback */}
+        {!pronunciationData &&
+          result.wordAnalysis &&
+          result.wordAnalysis.length > 0 && (
+            <>
+              {/* Text with Word-by-Word Analysis */}
+              <div className="space-y-2">
+                <h4 className="font-medium text-gray-300 text-sm">
+                  Word-by-Word Analysis:
+                </h4>
+                <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-700/50">
+                  <div className="flex flex-wrap gap-2">
+                    {result.wordAnalysis.map((word: any, index: number) => (
+                      <span
+                        key={index}
+                        className={`px-2 py-1 rounded-md border font-mono text-sm ${
+                          word.correct
+                            ? "bg-green-900/30 text-green-400 border-green-700/50"
+                            : "bg-red-900/30 text-red-400 border-red-700/50"
+                        }`}
+                        title={`Score: ${word.score}%`}
+                      >
+                        {word.word}
+                        {!word.correct && (
+                          <span className="ml-1 text-xs">❌</span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Detailed Phonetic Analysis */}
+              <div className="space-y-2">
+                <h4 className="font-medium text-gray-300 text-sm">
+                  Phonetic Analysis:
+                </h4>
+                <div className="space-y-2">
+                  {result.wordAnalysis.map((word: any, index: number) => (
+                    <div
+                      key={index}
+                      className={`p-3 rounded-lg border ${getWordScoreColor(
+                        word.score
+                      )}`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-semibold text-sm">
+                          {word.word}
+                        </span>
+                        <Badge
+                          variant="outline"
+                          className="border-current text-xs"
+                        >
+                          {word.score}%
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="font-medium text-gray-300">
+                            Your pronunciation:
+                          </span>
+                          <div className="font-mono bg-gray-900/50 p-2 rounded mt-1 text-gray-300">
+                            {word.userPronunciation}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="font-medium text-gray-300">
+                            Correct pronunciation:
+                          </span>
+                          <div className="font-mono bg-gray-900/50 p-2 rounded mt-1 text-gray-300">
+                            {word.correctPronunciation}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
         {/* Overall Feedback */}
         <div className="bg-blue-900/20 p-3 rounded-lg border border-blue-800/30">
@@ -691,7 +917,10 @@ export default function QuizResultsPage() {
               </div>
               <h3 className="font-medium text-gray-300 text-xs mb-1">Time</h3>
               <p className="text-xl font-bold text-blue-400">
-                {results.timeSpent}
+                {results.timeSpent}{" "}
+                {results?.quiz?.timeLimit
+                  ? ` / ${results?.quiz?.timeLimit} minutes`
+                  : ""}
               </p>
             </CardContent>
           </Card>

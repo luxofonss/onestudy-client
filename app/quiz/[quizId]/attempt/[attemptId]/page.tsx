@@ -837,8 +837,8 @@ export default function QuizAttemptPage() {
           // Upload the recorded audio blob
           try {
             // Convert blob to File object for upload
-            const audioFile = new File([newAudioBlob], "recording.wav", {
-              type: "audio/wav",
+            const audioFile = new File([newAudioBlob], "recording.ogg", {
+              type: "audio/ogg",
             });
 
             // Upload the audio file

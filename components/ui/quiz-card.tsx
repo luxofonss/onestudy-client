@@ -15,6 +15,7 @@ import {
   BarChart3,
   Tag,
   Calendar,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,7 +92,7 @@ const QuizCardComponent: React.FC<IQuizCardProps> = ({
     : null;
 
   return (
-    <Card className="bg-gray-800/70 border border-gray-700 shadow-md hover:shadow-xl transition-all duration-300 backdrop-blur-sm hover:bg-gray-800/90 group overflow-hidden">
+    <Card className="bg-gray-800/70 border border-gray-700 shadow-md hover:shadow-xl transition-all duration-300 backdrop-blur-sm hover:bg-gray-800/90 group overflow-hidden flex flex-col h-[340px]">
       <CardHeader className="pb-2 relative">
         {showSaveButton && onSave && (
           <Button
@@ -110,17 +111,17 @@ const QuizCardComponent: React.FC<IQuizCardProps> = ({
         )}
 
         <div className="flex flex-col gap-1">
-          <h3 className="font-medium text-base text-white line-clamp-2 pr-8 group-hover:text-teal-300 transition-colors">
+          <h3 className="font-medium text-base text-white line-clamp-2 pr-8 group-hover:text-teal-300 transition-colors min-h-[40px]">
             {quiz.title}
           </h3>
-          <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
+          <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed min-h-[32px]">
             {quiz.description}
           </p>
         </div>
       </CardHeader>
 
-      <CardContent className="pb-2 pt-0">
-        <div className="flex flex-wrap gap-1.5 mb-3">
+      <CardContent className="pb-2 pt-0 flex-grow flex flex-col">
+        <div className="flex flex-wrap gap-1.5 mb-3 max-h-[50px] overflow-hidden">
           <Badge
             className={`text-xs font-normal px-2 py-0.5 ${difficultyConfig.color
               .replace("text-green-700", "text-green-400")
@@ -129,14 +130,11 @@ const QuizCardComponent: React.FC<IQuizCardProps> = ({
           >
             {difficultyConfig.label}
           </Badge>
-          <Badge
-            className={`text-xs font-normal px-2 py-0.5 ${categoryConfig.color.replace(
-              "text-blue-700",
-              "text-blue-300"
-            )}`}
-          >
-            {categoryConfig.label}
-          </Badge>
+          {quiz.category && (
+            <Badge className="text-xs font-normal px-2 py-0.5 bg-blue-900/30 text-blue-300 border-blue-700/30">
+              {quiz.category}
+            </Badge>
+          )}
           {quiz.status && (
             <Badge
               className={`text-xs font-normal px-2 py-0.5 ${
@@ -148,38 +146,51 @@ const QuizCardComponent: React.FC<IQuizCardProps> = ({
               {quiz.status}
             </Badge>
           )}
+          {quiz.tags && quiz.tags.length > 0 && (
+            <Badge className="text-xs font-normal px-2 py-0.5 bg-purple-900/30 text-purple-300 border-purple-700/30 flex items-center gap-1">
+              <Tag className="h-3 w-3" />
+              <span className="truncate max-w-[80px]">{quiz.tags[0]}</span>
+              {quiz.tags.length > 1 && <span>+{quiz.tags.length - 1}</span>}
+            </Badge>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-2 text-xs mb-3">
-          <div className="bg-gray-900/50 rounded-md p-2 flex flex-col items-center justify-center">
+          <div className="bg-gray-900/50 rounded-md p-2 flex flex-col items-center justify-center h-[50px]">
             <Users className="h-3.5 w-3.5 text-gray-400 mb-1" />
             <span className="font-medium text-gray-300">
               {quiz.participants?.toLocaleString() || 0}
             </span>
           </div>
-          <div className="bg-gray-900/50 rounded-md p-2 flex flex-col items-center justify-center">
+          <div className="bg-gray-900/50 rounded-md p-2 flex flex-col items-center justify-center h-[50px]">
             <Star className="h-3.5 w-3.5 text-amber-400 mb-1" />
-            <span className="font-medium text-gray-300">{quiz.rating}</span>
+            <span className="font-medium text-gray-300">
+              {quiz.rating || "0.0"}
+            </span>
           </div>
-          <div className="bg-gray-900/50 rounded-md p-2 flex flex-col items-center justify-center">
+          <div className="bg-gray-900/50 rounded-md p-2 flex flex-col items-center justify-center h-[50px]">
             <Clock className="h-3.5 w-3.5 text-gray-400 mb-1" />
-            <span className="font-medium text-gray-300">{quiz.duration}</span>
+            <span className="font-medium text-gray-300">
+              {quiz.timeLimit || "N/A"} {quiz.timeLimit ? "min" : ""}
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-          <div className="flex items-center gap-1.5">
-            <Calendar className="h-3.5 w-3.5 text-gray-500" />
-            <span>{formattedDate || "N/A"}</span>
+        <div className="flex items-center justify-between text-xs text-gray-400 mt-auto">
+          <div className="flex items-center gap-1.5 min-w-0 max-w-[50%]">
+            <Calendar className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
+            <span className="truncate">{formattedDate || "N/A"}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Tag className="h-3.5 w-3.5 text-gray-500" />
-            <span className="font-medium text-gray-400">{quiz.creator}</span>
+          <div className="flex items-center gap-1.5 min-w-0 max-w-[50%]">
+            <User className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
+            <span className="font-medium text-gray-400 truncate">
+              {quiz?.author?.name}
+            </span>
           </div>
         </div>
       </CardContent>
 
-      <CardFooter className="pt-2">
+      <CardFooter className="pt-2 mt-auto">
         {showManageButtons ? (
           <div className="flex gap-1.5 w-full">
             <Button

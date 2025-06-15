@@ -9,6 +9,7 @@ export interface Question {
      text: string;
      options?: { id?: string; text: string; isCorrect: boolean }[];
      pronunciationText?: string;
+     acceptRate?: number; // Pronunciation acceptance rate (0-100)
      correctAnswers?: string[];
      trueFalseAnswer?: boolean;
      audioUrl?: string;
@@ -37,6 +38,7 @@ export interface TestData {
      authorId?: string;
      version: number;
      status: "draft" | "published";
+     difficulty?: "beginner" | "intermediate" | "advanced";
      // Enhanced quiz settings
      navigationMode: "sequential" | "back-only" | "free-navigation";
      hasTimer: boolean;

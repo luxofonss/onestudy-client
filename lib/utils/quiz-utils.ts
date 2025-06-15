@@ -14,17 +14,17 @@ export const getDifficultyOrder = (difficulty: DifficultyLevel): number => {
 
 export const getDifficultyConfig = (difficulty: DifficultyLevel) => {
   const configs = {
-    Beginner: {
+    BEGINNER: {
       label: "Beginner",
       color: "bg-green-100 text-green-800 border-green-200",
       description: "Perfect for newcomers",
     },
-    Intermediate: {
+    INTERMEDIATE: {
       label: "Intermediate",
       color: "bg-yellow-100 text-yellow-800 border-yellow-200",
       description: "For those with some experience",
     },
-    Advanced: {
+    ADVANCED: {
       label: "Advanced",
       color: "bg-red-100 text-red-800 border-red-200",
       description: "For experienced learners",
@@ -35,7 +35,7 @@ export const getDifficultyConfig = (difficulty: DifficultyLevel) => {
       description: "Suitable for everyone",
     },
   }
-  return configs[difficulty] ?? configs["Beginner"]
+  return configs[difficulty] ?? configs["BEGINNER"]
 }
 
 export const getCategoryConfig = (category: string) => {

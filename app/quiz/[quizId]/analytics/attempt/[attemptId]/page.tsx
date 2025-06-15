@@ -11,6 +11,8 @@ import {
   MessageSquare,
   CheckCircle,
   XCircle,
+  Volume2,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -132,6 +134,9 @@ export default function CreatorAttemptDetailPage() {
   const [comment, setComment] = useState("");
   const [isSavingComment, setIsSavingComment] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
+  const [isPlayingReference, setIsPlayingReference] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   useEffect(() => {
     const fetchAttemptDetail = async () => {
@@ -284,6 +289,241 @@ export default function CreatorAttemptDetailPage() {
   const getQuestionAudio = (questionId: string) => {
     const question = getQuestionById(questionId);
     return question ? question.audioUrl : null;
+  };
+
+  // Function to play reference audio using speech synthesis
+  const playReferenceAudio = (text: string, questionId: string) => {
+    if (!text || isPlayingReference[questionId]) return;
+
+    // Update state to show loading
+    setIsPlayingReference((prev) => ({ ...prev, [questionId]: true }));
+
+    // Create speech synthesis utterance
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.8;
+    utterance.onend = () => {
+      setIsPlayingReference((prev) => ({ ...prev, [questionId]: false }));
+    };
+
+    // Speak the text
+    speechSynthesis.speak(utterance);
+  };
+
+  // Parse pronunciation data from JSON string
+  const parsePronunciationData = (answerText: string | null) => {
+    if (!answerText) return null;
+
+    try {
+      return JSON.parse(answerText);
+    } catch (e) {
+      console.error("Failed to parse pronunciation data:", e);
+      return null;
+    }
+  };
+
+  // Get score badge variant based on accuracy
+  const getScoreBadgeVariant = (accuracy: number) => {
+    if (accuracy >= 80) return "success";
+    if (accuracy >= 60) return "warning";
+    return "destructive";
+  };
+
+  // Helper function to render pronunciation question UI
+  const renderPronunciationQuestion = (answer: any, question: any) => {
+    const pronunciationData = parsePronunciationData(answer.answerText);
+
+    return (
+      <div className="space-y-3">
+        {/* Text to Pronounce */}
+        <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+          <h4 className="font-medium text-gray-300 mb-1.5">
+            Text to Pronounce:
+          </h4>
+          <p className="text-gray-200 font-mono p-1.5 bg-gray-800/40 rounded-md">
+            "{question.pronunciationText}"
+          </p>
+        </div>
+
+        {/* Pronunciation Analysis - Based on pronunciation-test page */}
+        {pronunciationData && (
+          <div className="space-y-3 p-4 bg-gray-900/70 rounded-lg border border-gray-700/50 shadow-inner">
+            <div className="text-center">
+              <Badge
+                className={getScoreColor(
+                  pronunciationData.pronunciationAccuracy
+                )}
+              >
+                {pronunciationData.pronunciationAccuracy}% Accuracy
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs mt-3">
+              <div className="bg-gray-800/50 p-3 rounded-md border border-gray-700/30">
+                <h4 className="font-medium text-xs text-gray-400">
+                  Reference Text:
+                </h4>
+                <div className="font-mono text-blue-300 mt-1">
+                  {pronunciationData.realTranscripts ||
+                    question.pronunciationText}
+                </div>
+                {pronunciationData.realTranscriptsIpa && (
+                  <>
+                    <h4 className="font-medium text-xs text-gray-400 mt-2">
+                      Reference IPA:
+                    </h4>
+                    <div className="font-mono text-blue-300 mt-1">
+                      / {pronunciationData.realTranscriptsIpa} /
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="bg-gray-800/50 p-3 rounded-md border border-gray-700/30">
+                <h4 className="font-medium text-xs text-gray-400">
+                  Student's Text:
+                </h4>
+                <div className="font-mono text-purple-300 mt-1">
+                  {pronunciationData.matchedTranscripts ||
+                    "No transcription available"}
+                </div>
+                {pronunciationData.matchedTranscriptsIpa && (
+                  <>
+                    <h4 className="font-medium text-xs text-gray-400 mt-2">
+                      Student's IPA:
+                    </h4>
+                    <div className="font-mono text-purple-300 mt-1">
+                      / {pronunciationData.matchedTranscriptsIpa} /
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Word-by-Word Analysis */}
+            {pronunciationData.isLetterCorrectAllWords &&
+              pronunciationData.realTranscripts && (
+                <div className="space-y-2 mt-3">
+                  <h4 className="font-medium text-gray-300 text-sm">
+                    Word-by-Word Analysis:
+                  </h4>
+                  <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-700/50">
+                    <div className="flex flex-wrap gap-2">
+                      {pronunciationData.realTranscripts
+                        .split(" ")
+                        .map((word: string, wordIndex: number) => {
+                          const correctnessPattern =
+                            pronunciationData.isLetterCorrectAllWords.split(
+                              " "
+                            )[wordIndex];
+                          const isFullyCorrect =
+                            correctnessPattern &&
+                            !correctnessPattern.includes("0");
+
+                          return (
+                            <span
+                              key={wordIndex}
+                              className={`px-2 py-1 rounded-md border font-mono text-sm ${
+                                isFullyCorrect
+                                  ? "bg-green-900/30 text-green-400 border-green-700/50"
+                                  : "bg-red-900/30 text-red-400 border-red-700/50"
+                              }`}
+                            >
+                              {word}
+                              {!isFullyCorrect && (
+                                <span className="ml-1 text-xs">❌</span>
+                              )}
+                            </span>
+                          );
+                        })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            {/* Feedback message */}
+            <div className="text-center text-sm mt-2">
+              {pronunciationData.pronunciationAccuracy >= 80 ? (
+                <div className="flex items-center justify-center text-green-500 bg-green-900/20 py-2 px-3 rounded-md">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Excellent pronunciation!
+                </div>
+              ) : pronunciationData.pronunciationAccuracy >= 60 ? (
+                <div className="flex items-center justify-center text-yellow-500 bg-yellow-900/20 py-2 px-3 rounded-md">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Good job! Keep practicing.
+                </div>
+              ) : (
+                <div className="flex items-center justify-center text-red-500 bg-red-900/20 py-2 px-3 rounded-md">
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Needs more practice.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Audio Controls */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Student's Audio */}
+          <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-gray-300 text-sm">
+                Student's Audio
+              </h4>
+              {pronunciationData && (
+                <Badge
+                  className={getScoreColor(
+                    pronunciationData.pronunciationAccuracy
+                  )}
+                >
+                  {pronunciationData.pronunciationAccuracy}%
+                </Badge>
+              )}
+            </div>
+            {answer.audioUrl && (
+              <AudioPreview audioUrl={answer.audioUrl} compact />
+            )}
+          </div>
+
+          {/* Reference Audio */}
+          <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-medium text-gray-300 text-sm">
+                Reference Audio
+              </h4>
+              <Badge className="bg-green-900/50 text-green-300 border-green-700/50">
+                Reference
+              </Badge>
+            </div>
+            {question.audioUrl ? (
+              <AudioPreview audioUrl={question.audioUrl} compact />
+            ) : (
+              <div className="flex justify-center mt-2">
+                <Button
+                  onClick={() =>
+                    playReferenceAudio(
+                      pronunciationData?.realTranscripts ||
+                        question.pronunciationText,
+                      question.id
+                    )
+                  }
+                  disabled={isPlayingReference[question.id]}
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700/50"
+                >
+                  {isPlayingReference[question.id] ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Volume2 className="h-4 w-4 mr-1" />
+                  )}
+                  Play Reference
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -691,52 +931,11 @@ export default function CreatorAttemptDetailPage() {
 
                           {/* Pronunciation */}
                           {getQuestionType(answer.questionId) ===
-                            "PRONUNCIATION" && (
-                            <div className="space-y-2">
-                              <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
-                                <h4 className="font-medium text-gray-300  mb-1.5">
-                                  Pronunciation Text:
-                                </h4>
-                                <p className=" text-gray-200 font-mono p-1.5 bg-gray-800/40 rounded-md">
-                                  "
-                                  {
-                                    getQuestionById(answer.questionId)
-                                      ?.pronunciationText
-                                  }
-                                  "
-                                </p>
-                              </div>
-
-                              {/* Student's Audio */}
-                              {answer.audioUrl && (
-                                <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
-                                  <h4 className="font-medium text-gray-300  mb-1.5">
-                                    Student's Audio Answer:
-                                  </h4>
-                                  <AudioPreview
-                                    audioUrl={answer.audioUrl}
-                                    compact
-                                  />
-                                </div>
-                              )}
-
-                              {/* Score */}
-                              <div className="p-2.5 rounded-lg bg-blue-900/10 border border-blue-700/30">
-                                <div className="flex justify-between items-center">
-                                  <p className=" text-gray-300">
-                                    Pronunciation Score:
-                                  </p>
-                                  <Badge
-                                    className={getScoreColor(
-                                      answer.scoreAchieved || 0
-                                    )}
-                                  >
-                                    {answer.scoreAchieved || 0}%
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                            "PRONUNCIATION" &&
+                            renderPronunciationQuestion(
+                              answer,
+                              getQuestionById(answer.questionId)
+                            )}
 
                           {/* Question Explanation */}
                           {getQuestionExplanation(answer.questionId) && (

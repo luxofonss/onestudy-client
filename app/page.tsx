@@ -23,6 +23,8 @@ import {
   ArrowRight,
   Loader2,
   RocketIcon,
+  Voicemail,
+  MicrochipIcon,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { quizService } from "@/lib/services/quiz-service";
@@ -104,34 +106,31 @@ export default function HomePage() {
                   </span>
                 </h1>
                 <p className="text-lg md:text-xl text-gray-200 leading-relaxed max-w-xl">
-                  Master English with interactive lessons, pronunciation
+                  Master English with interactive quizzes, pronunciation
                   practice, and personalized feedback. Join thousands of
                   learners worldwide on their language journey.
                 </p>
               </div>
 
-              {/* Search Bar / Chat Input */}
-              <div className="relative mt-8">
-                <div className="flex items-center w-full max-w-xl bg-white/10 backdrop-blur-md border border-white/15 rounded-xl p-2 shadow-xl hover:bg-white/15 transition-all focus-within:ring-2 focus-within:ring-purple-500/50">
-                  <input
-                    type="text"
-                    placeholder="Ask OneStudy to create a quiz about..."
-                    className="flex-1 bg-transparent border-0 focus:ring-0 text-white placeholder:text-gray-300 pl-3 py-3 text-base"
-                  />
-                  <div className="flex items-center space-x-2 mr-2">
-                    <Button
-                      size="sm"
-                      className="gradient-button px-5 py-5 shadow-md hover:shadow-lg transition-all"
-                    >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      <span className="font-medium">Create</span>
-                    </Button>
-                  </div>
-                </div>
-                <div className="mt-2 text-xs text-gray-400 pl-2">
-                  Try: "Create a quiz about English idioms" or "Make a
-                  vocabulary test"
-                </div>
+              <div className="flex gap-8">
+                <Link href="/pronunciation-test">
+                  <Button
+                    size="sm"
+                    className="px-5 py-5 shadow-md hover:shadow-lg transition-all"
+                  >
+                    <MicrochipIcon className="h-4 w-4 mr-2" />
+                    <span className="font-medium">Test Your Pronunciation</span>
+                  </Button>
+                </Link>
+                <Link href="/pronunciation-test">
+                  <Button
+                    size="sm"
+                    className="gradient-button px-5 py-5 shadow-md hover:shadow-lg transition-all"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    <span className="font-medium">Start Quiz</span>
+                  </Button>
+                </Link>
               </div>
 
               {/* Trust Indicators */}
@@ -263,25 +262,27 @@ export default function HomePage() {
                 <p>Loading featured lessons...</p>
               </div>
             ) : featuredQuizzes?.length > 0 ? (
-              featuredQuizzes?.map((quiz) => (
-                <LessonCard
-                  key={quiz.id}
-                  id={quiz.id}
-                  title={quiz.title}
-                  description={quiz.description}
-                  creator={quiz.author?.name || "Unknown"}
-                  participants={quiz.participants || 0}
-                  rating={quiz.rating || 0}
-                  duration={`${quiz.duration || 0} min`}
-                  level={quiz.difficulty || "All Levels"}
-                  type="Quiz"
-                  icon={BookOpen}
-                  isPublic={quiz.isPublic}
-                  isSaved={savedQuizIds.includes(quiz.id)}
-                  onSave={handleSaveQuiz}
-                  showSaveButton={true}
-                />
-              ))
+              featuredQuizzes
+                ?.slice(0, 6)
+                ?.map((quiz) => (
+                  <LessonCard
+                    key={quiz.id}
+                    id={quiz.id}
+                    title={quiz.title}
+                    description={quiz.description}
+                    creator={quiz.author?.name || "Unknown"}
+                    participants={quiz.participants || 0}
+                    rating={quiz.rating || 0}
+                    timeLimit={`${quiz.timeLimit || 0} min`}
+                    level={quiz.difficulty || "All Levels"}
+                    type="Quiz"
+                    icon={BookOpen}
+                    isPublic={quiz.isPublic}
+                    isSaved={savedQuizIds.includes(quiz.id)}
+                    onSave={handleSaveQuiz}
+                    showSaveButton={true}
+                  />
+                ))
             ) : (
               <div className="col-span-full text-center py-16 text-gray-400">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-800/50 flex items-center justify-center">

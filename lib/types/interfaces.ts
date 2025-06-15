@@ -47,7 +47,10 @@ export interface IQuiz {
   id: string
   title: string
   description: string
-  creator: string
+  author: {
+    name: string
+    email: string
+  }
   participants: number
   rating: number
   duration: string

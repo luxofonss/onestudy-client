@@ -296,13 +296,15 @@ export default function LibraryPage() {
           className="mb-6"
         />
 
+        {/* 
+        TODO in the FUTURE
         <div className="mb-6">
           <SearchAndFilter
             filters={filters}
             onFiltersChange={handleFiltersChange}
             className="mb-0"
           />
-        </div>
+        </div> */}
 
         <Tabs
           value={activeTab}

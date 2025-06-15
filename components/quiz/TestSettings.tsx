@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,7 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Shuffle, Timer } from "lucide-react";
+import { Clock, Shuffle, Timer, Star } from "lucide-react";
 
 interface TestData {
   id: string;
@@ -39,6 +40,7 @@ interface TestData {
   maxAttempts: number;
   passingScore: number;
   tags: string[];
+  difficulty?: string;
   [key: string]: any;
 }
 
@@ -54,6 +56,41 @@ export default function TestSettings({
   testData,
   onTestInfoChange,
 }: TestSettingsProps) {
+  // State for managing the tags input
+  const [tagsInput, setTagsInput] = useState(testData.tags.join(", "));
+
+  // Update tags input when testData.tags changes
+  useEffect(() => {
+    setTagsInput(testData.tags.join(", "));
+  }, [testData.tags]);
+
+  // Handle tag input change
+  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTagsInput(value);
+  };
+
+  // Handle tag input blur to update the actual tags array
+  const handleTagsBlur = () => {
+    const tagsArray = tagsInput
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag);
+    onTestInfoChange("tags", tagsArray);
+  };
+
+  // Handle tag input key down to update tags on Enter
+  const handleTagsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const tagsArray = tagsInput
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag);
+      onTestInfoChange("tags", tagsArray);
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Main Content - Settings */}
@@ -93,20 +130,34 @@ export default function TestSettings({
               />
             </div>
             <div>
+              <Label htmlFor="testDifficulty" className="text-gray-300">
+                Difficulty Level
+              </Label>
+              <Select
+                value={testData.difficulty || "beginner"}
+                onValueChange={(value) => onTestInfoChange("difficulty", value)}
+              >
+                <SelectTrigger className="bg-gray-700 border-gray-600">
+                  <SelectValue placeholder="Select difficulty" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectItem value="beginner">Beginner</SelectItem>
+                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                  <SelectItem value="advanced">Advanced</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
               <Label htmlFor="testTags" className="text-gray-300">
-                Tags (comma separated)
+                Tags (comma separated, press Enter to add)
               </Label>
               <Input
                 id="testTags"
                 placeholder="e.g. grammar, beginner, vocabulary"
-                value={testData.tags.join(", ")}
-                onChange={(e) => {
-                  const tagsArray = e.target.value
-                    .split(",")
-                    .map((tag) => tag.trim())
-                    .filter((tag) => tag);
-                  onTestInfoChange("tags", tagsArray);
-                }}
+                value={tagsInput}
+                onChange={handleTagsChange}
+                onBlur={handleTagsBlur}
+                onKeyDown={handleTagsKeyDown}
                 className="w-full p-2 bg-gray-700 border border-gray-600 rounded focus:border-teal-500 focus:ring-teal-500"
               />
               <div className="flex flex-wrap gap-1 mt-2">
@@ -407,6 +458,16 @@ export default function TestSettings({
               <Timer className="h-4 w-4 text-teal-400" />
               <span className="text-sm text-gray-300">
                 Passing score: {testData.passingScore}%
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Star className="h-4 w-4 text-teal-400" />
+              <span className="text-sm text-gray-300">
+                Difficulty:{" "}
+                {testData.difficulty
+                  ? testData.difficulty.charAt(0).toUpperCase() +
+                    testData.difficulty.slice(1)
+                  : "Beginner"}
               </span>
             </div>
           </CardContent>

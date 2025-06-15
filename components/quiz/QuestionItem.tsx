@@ -25,7 +25,7 @@ interface Option {
 }
 
 interface Question {
-  id: string;
+  id: string | null;
   type:
     | "multiple-choice"
     | "pronunciation"
@@ -35,6 +35,7 @@ interface Question {
   text: string;
   options?: Option[];
   pronunciationText?: string;
+  acceptRate?: number;
   correctBlanks?: string[];
   trueFalseAnswer?: boolean;
   audioUrl?: string;
@@ -121,12 +122,20 @@ export default function QuestionItem({
         );
       case "pronunciation":
         return (
-          <div className="mt-2">
+          <div className="mt-2 space-y-2">
             <div className="bg-gray-700/30 p-1.5 rounded-md">
               <span className="text-gray-300">Pronunciation text: </span>
               <span className="text-teal-300">
                 {question.pronunciationText}
               </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className="bg-purple-900/20 text-purple-300 border-purple-700/50"
+              >
+                Accept Rate: {question.acceptRate || 70}%
+              </Badge>
             </div>
           </div>
         );
@@ -286,7 +295,7 @@ export default function QuestionItem({
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => onDelete(question.id)}
+              onClick={() => question.id && onDelete(question.id)}
               className="bg-red-600 hover:bg-red-700"
             >
               Delete
