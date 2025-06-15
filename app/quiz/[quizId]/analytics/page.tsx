@@ -507,14 +507,29 @@ export default function QuizAnalyticsPage() {
                           <div className="text-sm text-gray-400">
                             {attempt.user.email}
                           </div>
-                          <Badge
-                            className={`text-xs ${getScoreColor(
-                              attempt.score
-                            )}`}
-                          >
-                            {attempt.score}%
-                          </Badge>
-                          <Badge
+                          {(() => {
+                            // Calculate total points once
+                            const totalPoints =
+                              quizStats?.questions?.reduce(
+                                (sum, question) => sum + question.points,
+                                0
+                              ) || 0;
+
+                            // Calculate score percentage safely
+                            const scorePercentage =
+                              totalPoints > 0 ? attempt.score / totalPoints : 0;
+
+                            return (
+                              <Badge
+                                className={`text-xs ${getScoreColor(
+                                  scorePercentage
+                                )}`}
+                              >
+                                {attempt.score} / {totalPoints}
+                              </Badge>
+                            );
+                          })()}
+                          {/* <Badge
                             variant={attempt.passed ? "default" : "destructive"}
                             className={`text-xs ${
                               attempt.passed
@@ -523,7 +538,7 @@ export default function QuizAnalyticsPage() {
                             }`}
                           >
                             {attempt.passed ? "Passed" : "Failed"}
-                          </Badge>
+                          </Badge> */}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400">
