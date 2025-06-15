@@ -709,247 +709,268 @@ export default function CreatorAttemptDetailPage() {
                         </p>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {/* Question Media - Left Column */}
-                        <div className="space-y-3">
-                          {/* Question Image */}
-                          {getQuestionImage(answer.questionId) && (
-                            <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
-                              <h4 className="font-medium text-gray-300  mb-1.5">
-                                Question Image:
-                              </h4>
-                              <img
-                                src={
-                                  getQuestionImage(answer.questionId) ||
-                                  "/placeholder.svg"
-                                }
-                                alt="Question visual aid"
-                                className="max-w-full h-auto rounded-md border border-gray-700/30 shadow-sm max-h-40"
-                                onError={(e) =>
-                                  (e.currentTarget.src =
-                                    "https://placehold.co/600x400/1f2937/475569?text=Image+Not+Found")
-                                }
-                              />
-                            </div>
+                      {/* Conditionally render grid based on question type */}
+                      {getQuestionType(answer.questionId) ===
+                      "PRONUNCIATION" ? (
+                        /* For pronunciation questions, only show the right column */
+                        <div className="grid grid-cols-1 gap-3">
+                          {/* Pronunciation Question UI */}
+                          {renderPronunciationQuestion(
+                            answer,
+                            getQuestionById(answer.questionId)
                           )}
-
-                          {/* Question Audio */}
-                          {getQuestionAudio(answer.questionId) && (
-                            <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
-                              <h4 className="font-medium text-gray-300  mb-1.5">
-                                Question Audio:
-                              </h4>
-                              <AudioPreview
-                                audioUrl={getQuestionAudio(answer.questionId)!}
-                                compact
-                              />
-                            </div>
-                          )}
-
-                          {/* Answer Details */}
-                          <div className="grid grid-cols-1 gap-2">
-                            <div
-                              className={`p-2.5 rounded-lg border ${
-                                answer.correct
-                                  ? "bg-green-900/10 border-green-700/30"
-                                  : "bg-red-900/10 border-red-700/30"
-                              }`}
-                            >
-                              <p className="font-medium  mb-1 text-gray-400">
-                                Student's Answer:
-                              </p>
-                              <p
-                                className={`font-mono  ${
-                                  answer.correct
-                                    ? "text-green-400"
-                                    : "text-red-400"
-                                }`}
-                              >
-                                {getUserAnswerText(answer)}
-                              </p>
-                              {answer.scoreAchieved !== undefined && (
-                                <p className=" text-gray-400 mt-1.5">
-                                  Score: {answer.scoreAchieved}
-                                </p>
-                              )}
-                            </div>
-                            <div className="p-2.5 rounded-lg bg-green-900/10 border border-green-700/30">
-                              <p className="font-medium  mb-1 text-gray-400">
-                                Correct Answer:
-                              </p>
-                              <p className="text-green-400 font-mono ">
-                                {getCorrectAnswerText(answer)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Question Options - Right Column */}
-                        <div className="space-y-3">
-                          {/* Multiple Choice Options */}
-                          {getQuestionType(answer.questionId) ===
-                            "MULTIPLE_CHOICE" && (
-                            <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
-                              <h4 className="font-medium text-gray-300  mb-1.5">
-                                All Options:
-                              </h4>
-                              <div className="space-y-1">
-                                {getQuestionById(
-                                  answer.questionId
-                                )?.options?.map((option, i) => (
-                                  <div
-                                    key={i}
-                                    className={`p-2 rounded-md border ${
-                                      option.isCorrect
-                                        ? "bg-green-900/10 border-green-700/30"
-                                        : answer.selectedAnswers?.some(
-                                            (sa) => sa.id === option.id
-                                          )
-                                        ? "bg-red-900/10 border-red-700/30"
-                                        : "bg-gray-800/20 border-gray-700/20"
-                                    }`}
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      {option.isCorrect && (
-                                        <CheckCircle className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
-                                      )}
-                                      {!option.isCorrect &&
-                                        answer.selectedAnswers?.some(
-                                          (sa) => sa.id === option.id
-                                        ) && (
-                                          <XCircle className="h-3.5 w-3.5 text-red-400 flex-shrink-0" />
-                                        )}
-                                      <span
-                                        className={` ${
-                                          option.isCorrect
-                                            ? "text-green-400"
-                                            : answer.selectedAnswers?.some(
-                                                (sa) => sa.id === option.id
-                                              )
-                                            ? "text-red-400"
-                                            : "text-gray-300"
-                                        }`}
-                                      >
-                                        {option.text}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Fill in the Blanks */}
-                          {getQuestionType(answer.questionId) ===
-                            "FILL_IN_THE_BLANK" && (
-                            <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
-                              <h4 className="font-medium text-gray-300  mb-1.5">
-                                Blank Answers:
-                              </h4>
-                              <div className="space-y-2">
-                                {getQuestionById(
-                                  answer.questionId
-                                )?.correctBlanks?.map((blank, i) => (
-                                  <div key={i} className="space-y-1">
-                                    <p className=" text-gray-400">
-                                      Blank {i + 1}
-                                    </p>
-                                    <div className="flex gap-2">
-                                      <div className="p-1.5 rounded-md bg-green-900/10 border border-green-700/30 flex-1">
-                                        <p className=" text-green-400">
-                                          Correct: {blank}
-                                        </p>
-                                      </div>
-                                      <div
-                                        className={`p-1.5 rounded-md flex-1 ${
-                                          answer.fillInBlanksAnswers?.[i] ===
-                                          blank
-                                            ? "bg-green-900/10 border border-green-700/30"
-                                            : "bg-red-900/10 border border-red-700/30"
-                                        }`}
-                                      >
-                                        <p
-                                          className={` ${
-                                            answer.fillInBlanksAnswers?.[i] ===
-                                            blank
-                                              ? "text-green-400"
-                                              : "text-red-400"
-                                          }`}
-                                        >
-                                          Student:{" "}
-                                          {answer.fillInBlanksAnswers?.[i] ||
-                                            "No answer"}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* True/False */}
-                          {getQuestionType(answer.questionId) ===
-                            "TRUE_FALSE" && (
-                            <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
-                              <h4 className="font-medium text-gray-300  mb-1.5">
-                                True/False Answer:
-                              </h4>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div className="p-1.5 rounded-md bg-green-900/10 border border-green-700/30">
-                                  <p className=" text-green-400">
-                                    Correct:{" "}
-                                    {getQuestionById(answer.questionId)
-                                      ?.trueFalseAnswer
-                                      ? "True"
-                                      : "False"}
-                                  </p>
-                                </div>
-                                <div
-                                  className={`p-1.5 rounded-md ${
-                                    answer.correct
-                                      ? "bg-green-900/10 border border-green-700/30"
-                                      : "bg-red-900/10 border border-red-700/30"
-                                  }`}
-                                >
-                                  <p
-                                    className={` ${
-                                      answer.correct
-                                        ? "text-green-400"
-                                        : "text-red-400"
-                                    }`}
-                                  >
-                                    Student:{" "}
-                                    {answer.userAnswerTrueFalse
-                                      ? "True"
-                                      : "False"}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Pronunciation */}
-                          {getQuestionType(answer.questionId) ===
-                            "PRONUNCIATION" &&
-                            renderPronunciationQuestion(
-                              answer,
-                              getQuestionById(answer.questionId)
-                            )}
 
                           {/* Question Explanation */}
                           {getQuestionExplanation(answer.questionId) && (
                             <div className="p-2.5 rounded-lg bg-blue-900/10 border border-blue-700/30">
-                              <p className="font-medium  mb-1 text-gray-400">
+                              <p className="font-medium mb-1 text-gray-400">
                                 Explanation:
                               </p>
-                              <p className="text-gray-300 ">
+                              <p className="text-gray-300">
                                 {getQuestionExplanation(answer.questionId)}
                               </p>
                             </div>
                           )}
                         </div>
-                      </div>
+                      ) : (
+                        /* For all other question types, show the original two-column layout */
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {/* Question Media - Left Column */}
+                          <div className="space-y-3">
+                            {/* Question Image */}
+                            {getQuestionImage(answer.questionId) && (
+                              <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                                <h4 className="font-medium text-gray-300  mb-1.5">
+                                  Question Image:
+                                </h4>
+                                <img
+                                  src={
+                                    getQuestionImage(answer.questionId) ||
+                                    "/placeholder.svg"
+                                  }
+                                  alt="Question visual aid"
+                                  className="max-w-full h-auto rounded-md border border-gray-700/30 shadow-sm max-h-40"
+                                  onError={(e) =>
+                                    (e.currentTarget.src =
+                                      "https://placehold.co/600x400/1f2937/475569?text=Image+Not+Found")
+                                  }
+                                />
+                              </div>
+                            )}
+
+                            {/* Question Audio */}
+                            {getQuestionAudio(answer.questionId) && (
+                              <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                                <h4 className="font-medium text-gray-300  mb-1.5">
+                                  Question Audio:
+                                </h4>
+                                <AudioPreview
+                                  audioUrl={
+                                    getQuestionAudio(answer.questionId)!
+                                  }
+                                  compact
+                                />
+                              </div>
+                            )}
+
+                            {/* Answer Details */}
+                            <div className="grid grid-cols-1 gap-2">
+                              <div
+                                className={`p-2.5 rounded-lg border ${
+                                  answer.correct
+                                    ? "bg-green-900/10 border-green-700/30"
+                                    : "bg-red-900/10 border-red-700/30"
+                                }`}
+                              >
+                                <p className="font-medium  mb-1 text-gray-400">
+                                  Student's Answer:
+                                </p>
+                                <p
+                                  className={`font-mono  ${
+                                    answer.correct
+                                      ? "text-green-400"
+                                      : "text-red-400"
+                                  }`}
+                                >
+                                  {getUserAnswerText(answer)}
+                                </p>
+                                {answer.scoreAchieved !== undefined && (
+                                  <p className=" text-gray-400 mt-1.5">
+                                    Score: {answer.scoreAchieved}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="p-2.5 rounded-lg bg-green-900/10 border border-green-700/30">
+                                <p className="font-medium  mb-1 text-gray-400">
+                                  Correct Answer:
+                                </p>
+                                <p className="text-green-400 font-mono ">
+                                  {getCorrectAnswerText(answer)}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Question Options - Right Column */}
+                          <div className="space-y-3">
+                            {/* Multiple Choice Options */}
+                            {getQuestionType(answer.questionId) ===
+                              "MULTIPLE_CHOICE" && (
+                              <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                                <h4 className="font-medium text-gray-300  mb-1.5">
+                                  All Options:
+                                </h4>
+                                <div className="space-y-1">
+                                  {getQuestionById(
+                                    answer.questionId
+                                  )?.options?.map((option, i) => (
+                                    <div
+                                      key={i}
+                                      className={`p-2 rounded-md border ${
+                                        option.isCorrect
+                                          ? "bg-green-900/10 border-green-700/30"
+                                          : answer.selectedAnswers?.some(
+                                              (sa) => sa.id === option.id
+                                            )
+                                          ? "bg-red-900/10 border-red-700/30"
+                                          : "bg-gray-800/20 border-gray-700/20"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        {option.isCorrect && (
+                                          <CheckCircle className="h-3.5 w-3.5 text-green-400 flex-shrink-0" />
+                                        )}
+                                        {!option.isCorrect &&
+                                          answer.selectedAnswers?.some(
+                                            (sa) => sa.id === option.id
+                                          ) && (
+                                            <XCircle className="h-3.5 w-3.5 text-red-400 flex-shrink-0" />
+                                          )}
+                                        <span
+                                          className={` ${
+                                            option.isCorrect
+                                              ? "text-green-400"
+                                              : answer.selectedAnswers?.some(
+                                                  (sa) => sa.id === option.id
+                                                )
+                                              ? "text-red-400"
+                                              : "text-gray-300"
+                                          }`}
+                                        >
+                                          {option.text}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Fill in the Blanks */}
+                            {getQuestionType(answer.questionId) ===
+                              "FILL_IN_THE_BLANK" && (
+                              <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                                <h4 className="font-medium text-gray-300  mb-1.5">
+                                  Blank Answers:
+                                </h4>
+                                <div className="space-y-2">
+                                  {getQuestionById(
+                                    answer.questionId
+                                  )?.correctBlanks?.map((blank, i) => (
+                                    <div key={i} className="space-y-1">
+                                      <p className=" text-gray-400">
+                                        Blank {i + 1}
+                                      </p>
+                                      <div className="flex gap-2">
+                                        <div className="p-1.5 rounded-md bg-green-900/10 border border-green-700/30 flex-1">
+                                          <p className=" text-green-400">
+                                            Correct: {blank}
+                                          </p>
+                                        </div>
+                                        <div
+                                          className={`p-1.5 rounded-md flex-1 ${
+                                            answer.fillInBlanksAnswers?.[i] ===
+                                            blank
+                                              ? "bg-green-900/10 border border-green-700/30"
+                                              : "bg-red-900/10 border border-red-700/30"
+                                          }`}
+                                        >
+                                          <p
+                                            className={` ${
+                                              answer.fillInBlanksAnswers?.[
+                                                i
+                                              ] === blank
+                                                ? "text-green-400"
+                                                : "text-red-400"
+                                            }`}
+                                          >
+                                            Student:{" "}
+                                            {answer.fillInBlanksAnswers?.[i] ||
+                                              "No answer"}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* True/False */}
+                            {getQuestionType(answer.questionId) ===
+                              "TRUE_FALSE" && (
+                              <div className="p-2.5 rounded-lg bg-gray-800/30 border border-gray-700/30">
+                                <h4 className="font-medium text-gray-300  mb-1.5">
+                                  True/False Answer:
+                                </h4>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="p-1.5 rounded-md bg-green-900/10 border border-green-700/30">
+                                    <p className=" text-green-400">
+                                      Correct:{" "}
+                                      {getQuestionById(answer.questionId)
+                                        ?.trueFalseAnswer
+                                        ? "True"
+                                        : "False"}
+                                    </p>
+                                  </div>
+                                  <div
+                                    className={`p-1.5 rounded-md ${
+                                      answer.correct
+                                        ? "bg-green-900/10 border border-green-700/30"
+                                        : "bg-red-900/10 border border-red-700/30"
+                                    }`}
+                                  >
+                                    <p
+                                      className={` ${
+                                        answer.correct
+                                          ? "text-green-400"
+                                          : "text-red-400"
+                                      }`}
+                                    >
+                                      Student:{" "}
+                                      {answer.userAnswerTrueFalse
+                                        ? "True"
+                                        : "False"}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Question Explanation */}
+                            {getQuestionExplanation(answer.questionId) && (
+                              <div className="p-2.5 rounded-lg bg-blue-900/10 border border-blue-700/30">
+                                <p className="font-medium  mb-1 text-gray-400">
+                                  Explanation:
+                                </p>
+                                <p className="text-gray-300 ">
+                                  {getQuestionExplanation(answer.questionId)}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
