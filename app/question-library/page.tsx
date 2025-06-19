@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Filter,
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { event } from "@/lib/utils/analytics";
 
 interface Question {
   id: string;
@@ -148,6 +149,61 @@ export default function QuestionLibraryPage() {
     tags: [],
   });
 
+  useEffect(() => {
+    // Track page view
+    event({
+      action: 'question_library_page_view',
+      category: 'Question Management',
+      label: 'Question Library Page',
+    });
+  }, []);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    // Only track search when user has typed at least 3 characters
+    if (query.length >= 3) {
+      event({
+        action: 'question_search',
+        category: 'Question Management',
+        label: query,
+      });
+    }
+  };
+  
+  const handleFilterChange = (filterType: string, value: string) => {
+    switch (filterType) {
+      case 'category':
+        setFilterCategory(value);
+        break;
+      case 'difficulty':
+        setFilterDifficulty(value);
+        break;
+      case 'type':
+        setFilterType(value);
+        break;
+    }
+    
+    // Track filter change
+    event({
+      action: 'question_filter_change',
+      category: 'Question Management',
+      label: `${filterType}:${value}`,
+    });
+  };
+
+  const openCreateModal = () => {
+    setIsCreateModalOpen(true);
+    
+    // Track create modal open
+    event({
+      action: 'question_create_modal_open',
+      category: 'Question Management',
+      label: 'Create Question Modal',
+    });
+  };
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "beginner":
@@ -210,6 +266,13 @@ export default function QuestionLibraryPage() {
   ];
 
   const duplicateQuestion = (question: Question) => {
+    // Track question duplication
+    event({
+      action: 'question_duplicate',
+      category: 'Question Management',
+      label: `Type: ${question.type}, ID: ${question.id}`,
+    });
+    
     const newQuestion = {
       ...question,
       id: Date.now().toString(),
@@ -221,7 +284,65 @@ export default function QuestionLibraryPage() {
   };
 
   const deleteQuestion = (id: string) => {
+    // Track question deletion
+    event({
+      action: 'question_delete',
+      category: 'Question Management',
+      label: `Question ID: ${id}`,
+    });
+    
     setQuestions((prev) => prev.filter((q) => q.id !== id));
+  };
+  
+  const handleCreateQuestion = () => {
+    // Track question creation
+    event({
+      action: 'question_create',
+      category: 'Question Management',
+      label: `Type: ${newQuestion.type}, Difficulty: ${newQuestion.difficulty}`,
+    });
+    
+    const question: Question = {
+      ...(newQuestion as Question),
+      id: Date.now().toString(),
+      tags: [],
+      createdAt: new Date().toISOString().split("T")[0],
+      usageCount: 0,
+      rating: 0,
+    };
+    setQuestions((prev) => [question, ...prev]);
+    setIsCreateModalOpen(false);
+    setNewQuestion({
+      type: "multiple-choice",
+      text: "",
+      points: 1,
+      difficulty: "beginner",
+      category: "General",
+      tags: [],
+    });
+  };
+  
+  const handleCancelCreate = () => {
+    // Track create modal cancel
+    event({
+      action: 'question_create_cancel',
+      category: 'Question Management',
+      label: 'Cancel Create Question',
+    });
+    
+    setIsCreateModalOpen(false);
+  };
+  
+  const handleEditQuestion = (questionId: string) => {
+    // Track question edit click
+    event({
+      action: 'question_edit_click',
+      category: 'Question Management',
+      label: `Question ID: ${questionId}`,
+    });
+    
+    // Implement edit functionality
+    // Currently just a placeholder
   };
 
   return (
@@ -244,13 +365,16 @@ export default function QuestionLibraryPage() {
             <Input
               placeholder="Search questions, tags, or categories..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
               className="pl-10 border-teal-200 focus:border-teal-500 focus:ring-teal-500"
             />
           </div>
           <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-teal-600 hover:bg-teal-700 text-white">
+              <Button 
+                className="bg-teal-600 hover:bg-teal-700 text-white"
+                onClick={openCreateModal}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Create Question
               </Button>
@@ -356,31 +480,12 @@ export default function QuestionLibraryPage() {
                 <div className="flex justify-end space-x-2">
                   <Button
                     variant="outline"
-                    onClick={() => setIsCreateModalOpen(false)}
+                    onClick={handleCancelCreate}
                   >
                     Cancel
                   </Button>
                   <Button
-                    onClick={() => {
-                      const question: Question = {
-                        ...(newQuestion as Question),
-                        id: Date.now().toString(),
-                        tags: [],
-                        createdAt: new Date().toISOString().split("T")[0],
-                        usageCount: 0,
-                        rating: 0,
-                      };
-                      setQuestions((prev) => [question, ...prev]);
-                      setIsCreateModalOpen(false);
-                      setNewQuestion({
-                        type: "multiple-choice",
-                        text: "",
-                        points: 1,
-                        difficulty: "beginner",
-                        category: "General",
-                        tags: [],
-                      });
-                    }}
+                    onClick={handleCreateQuestion}
                     className="bg-teal-600 hover:bg-teal-700 text-white"
                   >
                     Create Question
@@ -392,7 +497,10 @@ export default function QuestionLibraryPage() {
         </div>
 
         <div className="flex flex-wrap gap-4">
-          <Select value={filterCategory} onValueChange={setFilterCategory}>
+          <Select 
+            value={filterCategory} 
+            onValueChange={(value) => handleFilterChange('category', value)}
+          >
             <SelectTrigger className="w-48">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Category" />
@@ -407,7 +515,10 @@ export default function QuestionLibraryPage() {
             </SelectContent>
           </Select>
 
-          <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
+          <Select 
+            value={filterDifficulty} 
+            onValueChange={(value) => handleFilterChange('difficulty', value)}
+          >
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Difficulty" />
             </SelectTrigger>
@@ -419,7 +530,10 @@ export default function QuestionLibraryPage() {
             </SelectContent>
           </Select>
 
-          <Select value={filterType} onValueChange={setFilterType}>
+          <Select 
+            value={filterType} 
+            onValueChange={(value) => handleFilterChange('type', value)}
+          >
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Question Type" />
             </SelectTrigger>
@@ -499,7 +613,7 @@ export default function QuestionLibraryPage() {
                   : "Start by creating your first question"}
               </p>
               <Button
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={openCreateModal}
                 className="bg-teal-600 hover:bg-teal-700 text-white"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -612,6 +726,7 @@ export default function QuestionLibraryPage() {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => handleEditQuestion(question.id)}
                       className="border-teal-600 text-teal-600 hover:bg-teal-50"
                     >
                       <Edit className="h-4 w-4 mr-1" />

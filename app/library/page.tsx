@@ -15,6 +15,7 @@ import { SUCCESS_CODE } from "@/lib/constants";
 import { BookOpen, Library, User, Search, Filter, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { event } from "@/lib/utils/analytics";
 
 // Dynamic imports for better performance
 const LoadingSkeleton = dynamic(
@@ -69,13 +70,35 @@ export default function LibraryPage() {
 
       if (result?.meta?.code === SUCCESS_CODE && result.data) {
         setQuizzes(result.data);
+        
+        // Track successful quiz fetch
+        event({
+          action: 'library_fetch_success',
+          category: 'Library',
+          label: activeTab,
+          value: result.data.length
+        });
       } else {
         console.error("Failed to fetch quizzes:", result.error);
         setQuizzes([]);
+        
+        // Track failed quiz fetch
+        event({
+          action: 'library_fetch_error',
+          category: 'Library',
+          label: activeTab,
+        });
       }
     } catch (error) {
       console.error("Error fetching quizzes:", error);
       setQuizzes([]);
+      
+      // Track fetch error
+      event({
+        action: 'library_fetch_network_error',
+        category: 'Library',
+        label: activeTab,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -99,6 +122,13 @@ export default function LibraryPage() {
         const isSaved = savedQuizIds.includes(quizId);
 
         if (isSaved) {
+          // Track unsave quiz attempt
+          event({
+            action: 'quiz_unsave',
+            category: 'Library',
+            label: quizId,
+          });
+          
           const result = await quizService.unsaveQuiz(quizId);
           if (result.meta?.code === SUCCESS_CODE) {
             setSavedQuizIds((prev) => prev.filter((id) => id !== quizId));
@@ -106,38 +136,108 @@ export default function LibraryPage() {
             if (activeTab === "saved") {
               fetchQuizzes();
             }
+            
+            // Track successful unsave
+            event({
+              action: 'quiz_unsave_success',
+              category: 'Library',
+              label: quizId,
+            });
           }
         } else {
+          // Track save quiz attempt
+          event({
+            action: 'quiz_save',
+            category: 'Library',
+            label: quizId,
+          });
+          
           const result = await quizService.saveQuiz(quizId);
           if (result.meta?.code === SUCCESS_CODE) {
             setSavedQuizIds((prev) => [...prev, quizId]);
+            
+            // Track successful save
+            event({
+              action: 'quiz_save_success',
+              category: 'Library',
+              label: quizId,
+            });
           }
         }
       } catch (error) {
         console.error("Error saving/unsaving quiz:", error);
+        
+        // Track save/unsave error
+        event({
+          action: 'quiz_save_error',
+          category: 'Library',
+          label: quizId,
+        });
       }
     },
     [savedQuizIds, setSavedQuizIds, activeTab, fetchQuizzes]
   );
 
   const handleEditQuiz = useCallback((quizId: string) => {
+    // Track quiz edit
+    event({
+      action: 'quiz_edit',
+      category: 'Library',
+      label: quizId,
+    });
+    
     window.location.href = `/create/${quizId}`;
   }, []);
 
   const handleDeleteQuiz = useCallback(
     async (quizId: string) => {
       if (window.confirm("Are you sure you want to delete this quiz?")) {
+        // Track quiz delete confirmation
+        event({
+          action: 'quiz_delete_confirm',
+          category: 'Library',
+          label: quizId,
+        });
+        
         try {
           const result = await quizService.deleteQuiz(quizId);
           if (result.success) {
             // Refresh the quiz list
             fetchQuizzes();
+            
+            // Track successful delete
+            event({
+              action: 'quiz_delete_success',
+              category: 'Library',
+              label: quizId,
+            });
           } else {
             console.error("Failed to delete quiz:", result.error);
+            
+            // Track delete failure
+            event({
+              action: 'quiz_delete_error',
+              category: 'Library',
+              label: quizId,
+            });
           }
         } catch (error) {
           console.error("Error deleting quiz:", error);
+          
+          // Track delete network error
+          event({
+            action: 'quiz_delete_network_error',
+            category: 'Library',
+            label: quizId,
+          });
         }
+      } else {
+        // Track quiz delete cancellation
+        event({
+          action: 'quiz_delete_cancel',
+          category: 'Library',
+          label: quizId,
+        });
       }
     },
     [fetchQuizzes]
@@ -147,11 +247,26 @@ export default function LibraryPage() {
     navigator.clipboard.writeText(
       `${window.location.origin}/content/${quizId}`
     );
+    
+    // Track quiz share
+    event({
+      action: 'quiz_share',
+      category: 'Library',
+      label: quizId,
+    });
+    
     // You could add a toast notification here
   }, []);
 
   const handleAnalyticsQuiz = useCallback(
     (quizId: string) => {
+      // Track quiz analytics view
+      event({
+        action: 'quiz_analytics_view',
+        category: 'Library',
+        label: quizId,
+      });
+      
       router.push(`/quiz/${quizId}/analytics`);
     },
     [router]
@@ -167,6 +282,13 @@ export default function LibraryPage() {
       const params = new URLSearchParams(searchParams.toString());
       params.set("tab", newTab);
       router.push(`/library?${params.toString()}`);
+      
+      // Track tab change
+      event({
+        action: 'library_tab_change',
+        category: 'Library',
+        label: newTab,
+      });
     },
     [router, searchParams]
   );
@@ -174,6 +296,13 @@ export default function LibraryPage() {
   const handleFiltersChange = useCallback(
     (newFilters: Partial<IQuizFilters>) => {
       setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
+      
+      // Track filter change
+      event({
+        action: 'library_filter_change',
+        category: 'Library',
+        label: JSON.stringify(newFilters),
+      });
     },
     []
   );

@@ -14,6 +14,11 @@ export const metadata: Metadata = {
   title: "OneStudy - Learn and Create Educational Content",
   description: "A platform for learning and creating educational content",
   generator: "v0.dev",
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

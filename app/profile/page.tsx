@@ -45,19 +45,11 @@ import { userService } from "@/lib/services/user-service";
 import { quizService } from "@/lib/services/quiz-service";
 import { authService } from "@/lib/services/auth-service";
 import { useToast } from "@/hooks/use-toast";
-import type { IUser, IUserStats } from "@/lib/types/api-types";
+import type { IUser, IUserStats, IQuizAttempt } from "@/lib/types/api-types";
 import { SUCCESS_CODE } from "@/lib/constants";
 
-interface QuizAttempt {
-  id: string;
-  quizId: string;
-  userId: string;
-  score: number;
-  totalQuestions: number | null;
-  correctAnswers: number;
-  timeSpent: number;
-  completedAt: string | null;
-  passed: boolean;
+// Enhanced QuizAttempt interface that includes quiz details
+interface EnhancedQuizAttempt extends Omit<IQuizAttempt, 'quiz'> {
   quiz: {
     id: string;
     title: string;
@@ -75,11 +67,39 @@ interface QuizWithAttempts {
   difficulty: string | null;
   questionCount: number;
   tags: string[];
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: null | string;
+  authorId: string;
+  author: {
+    id: string;
+    username: string;
+    name: string;
+    email: string;
+    avatar: string | null;
+    joinedAt: string;
+    lastLoginAt: string | null;
+    isActive: boolean;
+    role: string;
+  };
+  rating: number;
+  attempts: number;
   passingScore: number;
   maxAttempts: number;
   hasTimer: boolean;
   timeLimit: number;
-  quizAttempts: QuizAttempt[];
+  warningTime: number;
+  allowQuestionPicker: boolean;
+  shuffleQuestions: boolean;
+  shuffleAnswers: boolean;
+  showProgress: boolean;
+  allowPause: boolean;
+  navigationMode: string;
+  questions: null | any[];
+  quizAttempts: IQuizAttempt[];
+  savedByUsers: null | any[];
+  leaderboardEntries: null | any[];
 }
 
 function ProfilePage() {
@@ -129,9 +149,8 @@ function ProfilePage() {
 
       // Fetch quiz history
       const quizResponse = await quizService.getMyQuizAttempts();
-      if (quizResponse.data) {
-        // TODO
-        // setQuizHistory(quizResponse.data);
+      if (quizResponse.meta?.code === SUCCESS_CODE && quizResponse.data) {
+        setQuizHistory(quizResponse.data);
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
@@ -214,37 +233,69 @@ function ProfilePage() {
   };
 
   // Get recent quiz attempts from all quizzes
-  const getRecentQuizzes = () => {
-    const allAttempts: QuizAttempt[] = [];
+  const getRecentQuizzes = (): EnhancedQuizAttempt[] => {
+    const allAttempts: EnhancedQuizAttempt[] = [];
+    
     quizHistory.forEach((quiz) => {
-      quiz.quizAttempts.forEach((attempt) => {
-        if (attempt.completedAt) {
-          allAttempts.push(attempt);
-        }
-      });
+      if (quiz.quizAttempts && Array.isArray(quiz.quizAttempts)) {
+        quiz.quizAttempts.forEach((attempt) => {
+          if (attempt.completedAt) {
+            // Create a complete attempt object with quiz details
+            allAttempts.push({
+              ...attempt,
+              quiz: {
+                id: quiz.id,
+                title: quiz.title,
+                description: quiz.description,
+                category: quiz.category,
+                difficulty: quiz.difficulty,
+              }
+            } as EnhancedQuizAttempt);
+          }
+        });
+      }
     });
 
     return allAttempts
       .sort(
         (a, b) =>
-          new Date(b.completedAt!).getTime() -
-          new Date(a.completedAt!).getTime()
+          new Date(b.completedAt).getTime() -
+          new Date(a.completedAt).getTime()
       )
       .slice(0, 4);
   };
 
   // Calculate analytics data
   const getAnalyticsData = () => {
-    const allAttempts = quizHistory.flatMap((quiz) => quiz.quizAttempts);
-    const completedAttempts = allAttempts.filter(
-      (attempt) => attempt.completedAt
-    );
+    // Collect all completed attempts
+    const completedAttempts: EnhancedQuizAttempt[] = [];
+    
+    quizHistory.forEach((quiz) => {
+      if (quiz.quizAttempts && Array.isArray(quiz.quizAttempts)) {
+        quiz.quizAttempts.forEach((attempt) => {
+          if (attempt.completedAt) {
+            // Add quiz information to each attempt
+            completedAttempts.push({
+              ...attempt,
+              quiz: {
+                id: quiz.id,
+                title: quiz.title,
+                description: quiz.description,
+                category: quiz.category || 'General',
+                difficulty: quiz.difficulty,
+              }
+            } as EnhancedQuizAttempt);
+          }
+        });
+      }
+    });
 
     // Category performance
     const categoryMap = new Map<
       string,
       { total: number; score: number; count: number }
     >();
+    
     completedAttempts.forEach((attempt) => {
       const category = attempt.quiz?.category || "General";
       const existing = categoryMap.get(category) || {
@@ -473,7 +524,7 @@ function ProfilePage() {
 
           {/* Main Content */}
           <div className="lg:col-span-3">
-            <Tabs defaultValue="overview" className="space-y-4">
+            <Tabs defaultValue="quizzes" className="space-y-4">
               <TabsList className="grid w-full grid-cols-4 bg-gray-800/30 p-0.5 rounded-md">
                 <TabsTrigger
                   value="overview"
@@ -572,36 +623,41 @@ function ProfilePage() {
                     <div className="space-y-2">
                       {recentQuizzes.length > 0 ? (
                         recentQuizzes.map((quiz) => (
-                          <div
-                            key={quiz.id}
-                            className="flex items-center justify-between p-2.5 bg-gray-800/40 rounded-md border border-gray-700/30"
+                          <Link 
+                            key={quiz.id} 
+                            href={`/quiz/${quiz.quizId}/attempt/${quiz.id}/result`}
+                            className="block"
                           >
-                            <div>
-                              <h3 className="font-medium text-gray-200 ">
-                                {quiz.quiz?.title}
-                              </h3>
-                              <p className=" text-gray-400 mt-0.5">
-                                {formatDate(quiz.completedAt!)} •{" "}
-                                {formatTime(quiz.timeSpent)}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-base font-bold">
-                                <Badge className={getScoreColor(quiz.score)}>
-                                  {quiz.score}%
+                            <div
+                              className="flex items-center justify-between p-2.5 bg-gray-800/40 rounded-md border border-gray-700/30 hover:bg-gray-800/60 transition-colors cursor-pointer"
+                            >
+                              <div>
+                                <h3 className="font-medium text-gray-200 ">
+                                  {quiz.quiz?.title}
+                                </h3>
+                                <p className=" text-gray-400 mt-0.5">
+                                  {formatDate(quiz.completedAt!)} •{" "}
+                                  {formatTime(quiz.timeSpent)}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-base font-bold">
+                                  <Badge className={getScoreColor(quiz.score)}>
+                                    {quiz.score}%
+                                  </Badge>
+                                </div>
+                                <Badge
+                                  className={
+                                    quiz.passed
+                                      ? "bg-green-900/40 text-green-300 border-green-700/40  mt-1"
+                                      : "bg-red-900/40 text-red-300 border-red-700/40  mt-1"
+                                  }
+                                >
+                                  {quiz.passed ? "Passed" : "Failed"}
                                 </Badge>
                               </div>
-                              <Badge
-                                className={
-                                  quiz.passed
-                                    ? "bg-green-900/40 text-green-300 border-green-700/40  mt-1"
-                                    : "bg-red-900/40 text-red-300 border-red-700/40  mt-1"
-                                }
-                              >
-                                {quiz.passed ? "Passed" : "Failed"}
-                              </Badge>
                             </div>
-                          </div>
+                          </Link>
                         ))
                       ) : (
                         <div className="text-center py-6 bg-gray-800/40 rounded-md border border-gray-700/30">
@@ -646,38 +702,43 @@ function ProfilePage() {
                     <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
                       {recentQuizzes.length > 0 ? (
                         recentQuizzes.map((quiz) => (
-                          <div
-                            key={quiz.id}
-                            className="border border-gray-700/30 bg-gray-800/40 rounded-md p-3 hover:bg-gray-800/60 transition-colors"
+                          <Link 
+                            key={quiz.id} 
+                            href={`/quiz/${quiz.quizId}/attempt/${quiz.id}/result`}
+                            className="block"
                           >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <h3 className="font-medium text-gray-200 ">
-                                  {quiz.quiz.title}
-                                </h3>
-                                <p className=" text-gray-400 mt-0.5">
-                                  Completed on {formatDate(quiz.completedAt!)} •
-                                  Time spent: {formatTime(quiz.timeSpent)}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-lg font-bold">
-                                  <Badge className={getScoreColor(quiz.score)}>
-                                    {quiz.score}%
+                            <div
+                              className="border border-gray-700/30 bg-gray-800/40 rounded-md p-3 hover:bg-gray-800/60 transition-colors cursor-pointer"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h3 className="font-medium text-gray-200 ">
+                                    {quiz.quiz.title}
+                                  </h3>
+                                  <p className=" text-gray-400 mt-0.5">
+                                    Completed on {formatDate(quiz.completedAt!)} •
+                                    Time spent: {formatTime(quiz.timeSpent)}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-lg font-bold">
+                                    <Badge className={getScoreColor(quiz.score)}>
+                                      {quiz.score}%
+                                    </Badge>
+                                  </div>
+                                  <Badge
+                                    className={
+                                      quiz.passed
+                                        ? "bg-green-900/40 text-green-300 border-green-700/40  mt-1"
+                                        : "bg-red-900/40 text-red-300 border-red-700/40  mt-1"
+                                    }
+                                  >
+                                    {quiz.passed ? "Passed" : "Failed"}
                                   </Badge>
                                 </div>
-                                <Badge
-                                  className={
-                                    quiz.passed
-                                      ? "bg-green-900/40 text-green-300 border-green-700/40  mt-1"
-                                      : "bg-red-900/40 text-red-300 border-red-700/40  mt-1"
-                                  }
-                                >
-                                  {quiz.passed ? "Passed" : "Failed"}
-                                </Badge>
                               </div>
                             </div>
-                          </div>
+                          </Link>
                         ))
                       ) : (
                         <div className="text-center py-6 bg-gray-800/40 rounded-md border border-gray-700/30">

@@ -9,6 +9,8 @@ import {
   Mail,
   Phone,
   MapPin,
+  Github,
+  Linkedin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,17 +18,21 @@ import { Logo } from "@/components/ui/logo";
 
 interface SocialIconProps {
   icon: React.ElementType;
+  href: string;
 }
 
-function SocialIcon({ icon: Icon }: SocialIconProps) {
+function SocialIcon({ icon: Icon, href }: SocialIconProps) {
   return (
-    <Button
-      size="sm"
-      variant="ghost"
-      className="text-gray-400 hover:text-white hover:bg-white/10"
-    >
-      <Icon className="h-4 w-4" />
-    </Button>
+    <a href={href} target="_blank" rel="noopener noreferrer">
+      <Button
+        size="icon"
+        variant="ghost"
+        className="h-9 w-9 rounded-full bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/80 border border-gray-700/50 backdrop-blur-sm"
+      >
+        <Icon className="h-4 w-4" />
+        <span className="sr-only">Social media</span>
+      </Button>
+    </a>
   );
 }
 
@@ -38,7 +44,7 @@ interface FooterSectionProps {
 function FooterSection({ title, children }: FooterSectionProps) {
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-lg text-white">{title}</h3>
+      <h3 className="font-semibold text-base text-white bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">{title}</h3>
       {children}
     </div>
   );
@@ -53,7 +59,7 @@ function FooterLink({ href, children }: FooterLinkProps) {
   return (
     <Link
       href={href}
-      className="text-gray-400 hover:text-white transition-colors"
+      className="text-gray-400 hover:text-white transition-colors hover:underline decoration-gray-500 underline-offset-2"
     >
       {children}
     </Link>
@@ -69,11 +75,12 @@ function FooterCompanyInfo() {
         personalized feedback. Join thousands of learners worldwide on their
         English learning journey.
       </p>
-      <div className="flex space-x-4">
-        <SocialIcon icon={Facebook} />
-        <SocialIcon icon={Twitter} />
-        <SocialIcon icon={Instagram} />
-        <SocialIcon icon={Youtube} />
+      <div className="flex space-x-3">
+        <SocialIcon icon={Facebook} href="https://facebook.com" />
+        <SocialIcon icon={Twitter} href="https://twitter.com" />
+        <SocialIcon icon={Instagram} href="https://instagram.com" />
+        <SocialIcon icon={Linkedin} href="https://linkedin.com" />
+        <SocialIcon icon={Github} href="https://github.com" />
       </div>
     </div>
   );
@@ -95,6 +102,9 @@ function FooterQuickLinks() {
         <li>
           <FooterLink href="/profile">Profile</FooterLink>
         </li>
+        <li>
+          <FooterLink href="/pronunciation-test">Pronunciation Test</FooterLink>
+        </li>
       </ul>
     </FooterSection>
   );
@@ -102,7 +112,7 @@ function FooterQuickLinks() {
 
 function FooterLearningResources() {
   return (
-    <FooterSection title="Learning">
+    <FooterSection title="Learning Resources">
       <ul className="space-y-2 text-sm">
         <li>
           <FooterLink href="#">Grammar Lessons</FooterLink>
@@ -134,9 +144,11 @@ function NewsletterSignup() {
         <Input
           type="email"
           placeholder="Enter your email"
-          className="modern-input"
+          className="bg-gray-800/50 border-gray-700/50 text-gray-200 placeholder:text-gray-500 h-10 backdrop-blur-sm"
         />
-        <Button className="w-full gradient-button">Subscribe</Button>
+        <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white border-0">
+          Subscribe
+        </Button>
       </div>
     </FooterSection>
   );
@@ -150,7 +162,7 @@ interface ContactItemProps {
 function ContactItem({ icon: Icon, text }: ContactItemProps) {
   return (
     <div className="flex items-center space-x-2 text-gray-400">
-      <Icon className="h-4 w-4" />
+      <Icon className="h-4 w-4 text-gray-500" />
       <span>{text}</span>
     </div>
   );
@@ -158,7 +170,7 @@ function ContactItem({ icon: Icon, text }: ContactItemProps) {
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/10">
+    <footer className="border-t border-gray-800 bg-gradient-to-b from-gray-900 to-black">
       {/* Main Footer Content */}
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -170,7 +182,7 @@ export function Footer() {
       </div>
 
       {/* Contact Info */}
-      <div className="border-t border-white/10">
+      <div className="border-t border-gray-800/80 bg-black/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <ContactItem icon={Mail} text="support@onestudy.com" />
@@ -181,9 +193,9 @@ export function Footer() {
       </div>
 
       {/* Bottom Footer */}
-      <div className="border-t border-white/10">
+      <div className="border-t border-gray-800/80 bg-black/50">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col md:flex-row justify-between items-center text-sm text-gray-400">
+          <div className="flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
             <div>© 2024 OneStudy. All rights reserved.</div>
             <div className="flex space-x-6 mt-2 md:mt-0">
               <FooterLink href="#">Privacy Policy</FooterLink>

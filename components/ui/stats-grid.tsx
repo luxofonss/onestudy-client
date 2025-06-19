@@ -15,5 +15,9 @@ export function StatsGrid({ children, columns = 4, className = "" }: StatsGridPr
     6: "grid-cols-2 md:grid-cols-3 lg:grid-cols-6",
   }
 
-  return <div className={`grid ${gridCols[columns]} gap-4 ${className}`}>{children}</div>
+  return (
+    <div className={`grid ${gridCols[columns]} gap-4 ${className}`}>
+      {children}
+    </div>
+  )
 }

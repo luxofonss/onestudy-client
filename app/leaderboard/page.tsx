@@ -109,7 +109,7 @@ export default function LeaderboardPage() {
   ])
 
   return (
-    <div className="container mx-auto px-4 py-8 animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 text-gray-100 container mx-auto px-4 py-8 animate-fade-in">
       <PageHeader title="Global Leaderboard" description="Compete with English learners from around the world" />
 
       {/* Hero Section */}
@@ -119,8 +119,8 @@ export default function LeaderboardPage() {
             <Crown className="h-10 w-10 text-white" />
           </div>
         </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Hall of Fame</h2>
-        <p className="text-gray-600 max-w-2xl mx-auto">
+        <h2 className="text-3xl font-bold text-gray-100 mb-2">Hall of Fame</h2>
+        <p className="text-gray-400 max-w-2xl mx-auto">
           See how you rank against thousands of English learners worldwide. Complete quizzes to climb the rankings!
         </p>
       </div>
@@ -131,29 +131,25 @@ export default function LeaderboardPage() {
           icon={Trophy}
           value="5th"
           label="Your Global Rank"
-          color="text-blue-600"
-          className="bg-blue-50 border-blue-200"
+          color="text-blue-400"
         />
         <StatsCard
           icon={TrendingUp}
           value="+3"
           label="Rank Change"
-          color="text-green-600"
-          className="bg-green-50 border-green-200"
+          color="text-green-400"
         />
         <StatsCard
           icon={Users}
           value="1,247"
           label="Total Players"
-          color="text-purple-600"
-          className="bg-purple-50 border-purple-200"
+          color="text-purple-400"
         />
         <StatsCard
           icon={Target}
           value="Top 1%"
           label="Percentile"
-          color="text-orange-600"
-          className="bg-orange-50 border-orange-200"
+          color="text-orange-400"
         />
       </StatsGrid>
 
@@ -178,10 +174,10 @@ export default function LeaderboardPage() {
               showDetails={false}
               className={`transform hover:scale-105 transition-all duration-200 ${
                 entry.rank === 1
-                  ? "ring-2 ring-yellow-400 bg-gradient-to-br from-yellow-50 to-yellow-100"
+                  ? "ring-2 ring-yellow-400 bg-gradient-to-br from-yellow-900/50 to-yellow-800/50 border-yellow-700/40"
                   : entry.rank === 2
-                    ? "ring-2 ring-gray-300 bg-gradient-to-br from-gray-50 to-gray-100"
-                    : "ring-2 ring-amber-300 bg-gradient-to-br from-amber-50 to-amber-100"
+                    ? "ring-2 ring-gray-400 bg-gradient-to-br from-gray-900/50 to-gray-800/50 border-gray-700/40"
+                    : "ring-2 ring-amber-400 bg-gradient-to-br from-amber-900/50 to-amber-800/50 border-amber-700/40"
               }`}
             />
           </div>
@@ -189,10 +185,10 @@ export default function LeaderboardPage() {
       </div>
 
       {/* Full Leaderboard */}
-      <Card className="border-blue-100">
+      <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Globe className="h-5 w-5 mr-2 text-blue-600" />
+            <Globe className="h-5 w-5 mr-2 text-blue-400" />
             Global Rankings
           </CardTitle>
         </CardHeader>
@@ -211,28 +207,28 @@ export default function LeaderboardPage() {
       </Card>
 
       {/* Achievement Info */}
-      <div className="mt-8 bg-blue-50 rounded-2xl p-8">
+      <div className="mt-8 bg-gray-800/40 rounded-2xl p-8 border border-gray-700/30">
         <div className="text-center">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">Climb the Rankings</h3>
-          <p className="text-gray-600 max-w-2xl mx-auto mb-6">
+          <h3 className="text-2xl font-bold text-gray-100 mb-4">Climb the Rankings</h3>
+          <p className="text-gray-400 max-w-2xl mx-auto mb-6">
             Complete more quizzes, improve your scores, and compete with learners worldwide. Your ranking is based on
             your average score across all completed quizzes.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-            <div className="bg-white rounded-lg p-4">
-              <Trophy className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-              <h4 className="font-semibold text-gray-900">Complete Quizzes</h4>
-              <p className="text-sm text-gray-600">Take more quizzes to improve your ranking</p>
+            <div className="bg-gray-800/60 border border-gray-700/30 rounded-lg p-4">
+              <Trophy className="h-8 w-8 text-yellow-400 mx-auto mb-2" />
+              <h4 className="font-semibold text-gray-100">Complete Quizzes</h4>
+              <p className="text-sm text-gray-400">Take more quizzes to improve your ranking</p>
             </div>
-            <div className="bg-white rounded-lg p-4">
-              <Target className="h-8 w-8 text-blue-500 mx-auto mb-2" />
-              <h4 className="font-semibold text-gray-900">Improve Scores</h4>
-              <p className="text-sm text-gray-600">Higher scores boost your position</p>
+            <div className="bg-gray-800/60 border border-gray-700/30 rounded-lg p-4">
+              <Target className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+              <h4 className="font-semibold text-gray-100">Improve Scores</h4>
+              <p className="text-sm text-gray-400">Higher scores boost your position</p>
             </div>
-            <div className="bg-white rounded-lg p-4">
-              <Users className="h-8 w-8 text-green-500 mx-auto mb-2" />
-              <h4 className="font-semibold text-gray-900">Stay Active</h4>
-              <p className="text-sm text-gray-600">Regular practice maintains your rank</p>
+            <div className="bg-gray-800/60 border border-gray-700/30 rounded-lg p-4">
+              <Users className="h-8 w-8 text-green-400 mx-auto mb-2" />
+              <h4 className="font-semibold text-gray-100">Stay Active</h4>
+              <p className="text-sm text-gray-400">Regular practice maintains your rank</p>
             </div>
           </div>
         </div>

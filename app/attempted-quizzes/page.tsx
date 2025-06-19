@@ -191,10 +191,10 @@ export default function AttemptedQuizzesPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-gray-800 rounded w-1/4"></div>
           <div className="grid grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              <div key={i} className="h-24 bg-gray-800 rounded"></div>
             ))}
           </div>
         </div>
@@ -203,7 +203,7 @@ export default function AttemptedQuizzesPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 text-gray-100 container mx-auto px-4 py-8 animate-fade-in">
       <PageHeader
         title="My Quiz Attempts"
         description="Track your learning progress and review your quiz performance"
@@ -215,25 +215,25 @@ export default function AttemptedQuizzesPage() {
           icon={Trophy}
           value={stats.totalQuizzes}
           label="Quizzes Attempted"
-          color="text-blue-600"
+          color="text-blue-400"
         />
         <StatsCard
           icon={Target}
           value={stats.totalAttempts}
           label="Total Attempts"
-          color="text-green-600"
+          color="text-green-400"
         />
         <StatsCard
           icon={TrendingUp}
           value={`${stats.averageScore}%`}
           label="Avg Score"
-          color="text-blue-600"
+          color="text-blue-400"
         />
         <StatsCard
           icon={Clock}
           value={`${stats.passRate}%`}
           label="Pass Rate"
-          color="text-purple-600"
+          color="text-purple-400"
         />
       </StatsGrid>
 
@@ -245,15 +245,15 @@ export default function AttemptedQuizzesPage() {
             placeholder="Search quizzes by title or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 border-blue-200 focus:border-blue-500 focus:ring-blue-500"
+            className="pl-10 bg-gray-800/40 border-gray-700/30 focus:border-blue-600 focus:ring-blue-600 text-gray-200"
           />
         </div>
         <Select value={filterBy} onValueChange={setFilterBy}>
-          <SelectTrigger className="w-full md:w-48 border-blue-200 focus:border-blue-500 focus:ring-blue-500">
+          <SelectTrigger className="w-full md:w-48 bg-gray-800/40 border-gray-700/30 text-gray-200 focus:border-blue-600 focus:ring-blue-600">
             <Filter className="h-4 w-4 mr-2" />
             <SelectValue placeholder="Filter by" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
             <SelectItem value="all">All Quizzes</SelectItem>
             <SelectItem value="passed">Passed Only</SelectItem>
             <SelectItem value="failed">Failed Only</SelectItem>
@@ -265,7 +265,7 @@ export default function AttemptedQuizzesPage() {
             variant="outline"
             size="sm"
             className={`${
-              viewMode === "cards" ? "bg-blue-50 border-blue-300" : ""
+              viewMode === "cards" ? "bg-blue-900/30 border-blue-700/40 text-blue-300" : "bg-gray-800/40 border-gray-700/30 text-gray-300 hover:bg-gray-800"
             }`}
             onClick={() => setViewMode("cards")}
           >
@@ -294,7 +294,7 @@ export default function AttemptedQuizzesPage() {
             variant="outline"
             size="sm"
             className={`${
-              viewMode === "table" ? "bg-blue-50 border-blue-300" : ""
+              viewMode === "table" ? "bg-blue-900/30 border-blue-700/40 text-blue-300" : "bg-gray-800/40 border-gray-700/30 text-gray-300 hover:bg-gray-800"
             }`}
             onClick={() => setViewMode("table")}
           >
@@ -326,19 +326,19 @@ export default function AttemptedQuizzesPage() {
       {/* Quiz Results List */}
       <div className="space-y-4">
         {filteredQuizzes.length === 0 ? (
-          <Card className="border-gray-200">
+          <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
             <CardContent className="p-8 text-center">
-              <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Trophy className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-200 mb-2">
                 No quiz attempts found
               </h3>
-              <p className="text-gray-500 mb-4">
+              <p className="text-gray-400 mb-4">
                 {searchQuery || filterBy !== "all"
                   ? "Try adjusting your search or filter criteria"
                   : "Start taking quizzes to see your results here"}
               </p>
               <Link href="/">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Button className="bg-blue-600/80 hover:bg-blue-600 text-white">
                   Browse Quizzes
                 </Button>
               </Link>
@@ -353,24 +353,24 @@ export default function AttemptedQuizzesPage() {
             return (
               <Card
                 key={quiz.id}
-                className="border-blue-100 hover:border-blue-300 transition-all duration-200"
+                className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md hover:border-blue-700/40 transition-all duration-200"
               >
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between space-y-4 md:space-y-0">
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-3">
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                          <h3 className="text-lg font-semibold text-gray-100 mb-1">
                             {quiz.title}
                           </h3>
-                          <p className="text-sm text-gray-600 mb-2">
+                          <p className="text-sm text-gray-400 mb-2">
                             {quiz.description}
                           </p>
                           <div className="flex items-center space-x-2 mb-3">
                             {quiz.difficulty && (
                               <Badge
                                 variant="outline"
-                                className="border-gray-300"
+                                className="border-gray-700/40 bg-gray-800/40 text-gray-300"
                               >
                                 {quiz.difficulty}
                               </Badge>
@@ -378,7 +378,7 @@ export default function AttemptedQuizzesPage() {
                             {quiz.category && (
                               <Badge
                                 variant="outline"
-                                className="border-gray-300"
+                                className="border-gray-700/40 bg-gray-800/40 text-gray-300"
                               >
                                 {quiz.category}
                               </Badge>
@@ -387,7 +387,7 @@ export default function AttemptedQuizzesPage() {
                               <Badge
                                 key={index}
                                 variant="outline"
-                                className="border-blue-300 text-blue-600"
+                                className="border-blue-700/40 bg-blue-900/20 text-blue-300"
                               >
                                 {tag}
                               </Badge>
@@ -395,9 +395,15 @@ export default function AttemptedQuizzesPage() {
                           </div>
                         </div>
                         <div
-                          className={`px-4 py-2 rounded-lg border ${getPerformanceColor(
-                            stats.highestScore
-                          )}`}
+                          className={`px-4 py-2 rounded-lg ${
+                            stats.highestScore >= 90
+                              ? "bg-green-900/40 text-green-300 border border-green-700/40"
+                              : stats.highestScore >= 80
+                              ? "bg-blue-900/40 text-blue-300 border border-blue-700/40"
+                              : stats.highestScore >= 70
+                              ? "bg-yellow-900/40 text-yellow-300 border border-yellow-700/40"
+                              : "bg-red-900/40 text-red-300 border border-red-700/40"
+                          }`}
                         >
                           <div className="text-center">
                             <div className="text-2xl font-bold">
@@ -408,21 +414,21 @@ export default function AttemptedQuizzesPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-400 mb-4">
                         <div className="flex items-center">
-                          <Trophy className="h-4 w-4 mr-1" />
+                          <Trophy className="h-4 w-4 mr-1 text-blue-400" />
                           {stats.totalAttempts} attempts
                         </div>
                         <div className="flex items-center">
-                          <Target className="h-4 w-4 mr-1" />
+                          <Target className="h-4 w-4 mr-1 text-green-400" />
                           {stats.passedAttempts} passed
                         </div>
                         <div className="flex items-center">
-                          <TrendingUp className="h-4 w-4 mr-1" />
+                          <TrendingUp className="h-4 w-4 mr-1 text-yellow-400" />
                           Avg: {Math.round(stats.averageScore)}%
                         </div>
                         <div className="flex items-center">
-                          <Clock className="h-4 w-4 mr-1" />
+                          <Clock className="h-4 w-4 mr-1 text-purple-400" />
                           Required: {quiz.passingScore}%
                         </div>
                       </div>
@@ -435,7 +441,11 @@ export default function AttemptedQuizzesPage() {
                         }
                       >
                         <CollapsibleTrigger asChild>
-                          <Button variant="ghost" size="sm" className="mb-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="mb-2 text-gray-300 hover:bg-gray-800 hover:text-gray-100"
+                          >
                             {isExpanded ? (
                               <ChevronUp className="h-4 w-4 mr-1" />
                             ) : (
@@ -456,29 +466,35 @@ export default function AttemptedQuizzesPage() {
                             .map((attempt, index) => (
                               <div
                                 key={attempt.id}
-                                className="bg-gray-50 p-3 rounded-lg"
+                                className="bg-gray-800/60 border border-gray-700/30 p-3 rounded-lg"
                               >
                                 <div className="flex justify-between items-center">
                                   <div className="flex items-center space-x-4">
-                                    <span className="text-sm font-medium">
+                                    <span className="text-sm font-medium text-gray-300">
                                       Attempt #{stats.totalAttempts - index}
                                     </span>
                                     <span
-                                      className={`px-2 py-1 rounded text-xs ${getPerformanceColor(
-                                        attempt.score
-                                      )}`}
+                                      className={`px-2 py-1 rounded text-xs ${
+                                        attempt.score >= 90
+                                          ? "bg-green-900/40 text-green-300 border border-green-700/40"
+                                          : attempt.score >= 80
+                                          ? "bg-blue-900/40 text-blue-300 border border-blue-700/40"
+                                          : attempt.score >= 70
+                                          ? "bg-yellow-900/40 text-yellow-300 border border-yellow-700/40"
+                                          : "bg-red-900/40 text-red-300 border border-red-700/40"
+                                      }`}
                                     >
                                       {Math.round(attempt.score)}%
                                     </span>
-                                    <span className="text-xs text-gray-500">
+                                    <span className="text-xs text-gray-400">
                                       {attempt.correctAnswers} correct
                                     </span>
-                                    <span className="text-xs text-gray-500">
+                                    <span className="text-xs text-gray-400">
                                       {formatTimeSpent(attempt.timeSpent)}
                                     </span>
                                   </div>
                                   <div className="flex items-center space-x-2">
-                                    <div className="text-xs text-gray-500">
+                                    <div className="text-xs text-gray-400">
                                       {formatDate(attempt.completedAt)}
                                     </div>
                                     <Link
@@ -487,7 +503,7 @@ export default function AttemptedQuizzesPage() {
                                       <Button
                                         size="sm"
                                         variant="ghost"
-                                        className="h-7 px-2"
+                                        className="h-7 px-2 text-blue-300 hover:bg-blue-900/30 hover:text-blue-200"
                                       >
                                         <FileText className="h-3 w-3 mr-1" />
                                         Details
@@ -506,7 +522,7 @@ export default function AttemptedQuizzesPage() {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-blue-600 text-blue-600 hover:bg-blue-50 w-full sm:w-auto"
+                          className="border-blue-700/40 bg-blue-900/20 text-blue-300 hover:bg-blue-900/40 w-full sm:w-auto"
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View All
@@ -515,7 +531,7 @@ export default function AttemptedQuizzesPage() {
                       <Link href={`/content/${quiz.id}`}>
                         <Button
                           size="sm"
-                          className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
+                          className="bg-blue-600/80 hover:bg-blue-600 text-white w-full sm:w-auto"
                         >
                           <RotateCcw className="h-4 w-4 mr-1" />
                           Retake
@@ -529,29 +545,29 @@ export default function AttemptedQuizzesPage() {
           })
         ) : (
           // Table View
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto bg-gray-800/20 backdrop-blur-sm border border-gray-700/30 rounded-lg">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-gray-50 border-b">
-                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">
+                <tr className="bg-gray-800/60 border-b border-gray-700/30">
+                  <th className="px-4 py-3 text-left text-sm font-medium text-gray-300">
                     Quiz
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-500">
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-300">
                     Questions
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-500">
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-300">
                     Attempts
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-500">
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-300">
                     Best Score
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-500">
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-300">
                     Avg Score
                   </th>
-                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-500">
+                  <th className="px-4 py-3 text-center text-sm font-medium text-gray-300">
                     Pass Rate
                   </th>
-                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-500">
+                  <th className="px-4 py-3 text-right text-sm font-medium text-gray-300">
                     Actions
                   </th>
                 </tr>
@@ -570,13 +586,13 @@ export default function AttemptedQuizzesPage() {
 
                   return (
                     <>
-                      <tr key={quiz.id} className="border-b hover:bg-gray-50">
+                      <tr key={quiz.id} className="border-b border-gray-700/30 hover:bg-gray-800/40">
                         <td className="px-4 py-4">
                           <div>
-                            <div className="font-medium text-gray-900">
+                            <div className="font-medium text-gray-100">
                               {quiz.title}
                             </div>
-                            <div className="text-sm text-gray-500 truncate max-w-xs">
+                            <div className="text-sm text-gray-400 truncate max-w-xs">
                               {quiz.description}
                             </div>
                             <div className="flex flex-wrap gap-1 mt-1">
@@ -584,20 +600,20 @@ export default function AttemptedQuizzesPage() {
                                 <Badge
                                   key={index}
                                   variant="outline"
-                                  className="text-xs border-blue-300 text-blue-600"
+                                  className="text-xs border-blue-700/40 bg-blue-900/20 text-blue-300"
                                 >
                                   {tag}
                                 </Badge>
                               ))}
                               {quiz.tags.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
+                                <Badge variant="outline" className="text-xs border-gray-700/40 bg-gray-800/40 text-gray-300">
                                   +{quiz.tags.length - 3}
                                 </Badge>
                               )}
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-center">
+                        <td className="px-4 py-4 text-center text-gray-300">
                           {quiz.questionCount}
                         </td>
                         <td className="px-4 py-4 text-center">
@@ -607,7 +623,7 @@ export default function AttemptedQuizzesPage() {
                             onClick={() =>
                               setExpandedQuiz(isExpanded ? null : quiz.id)
                             }
-                            className="text-blue-600 hover:text-blue-800"
+                            className="text-blue-300 hover:text-blue-200 hover:bg-blue-900/30"
                           >
                             {stats.totalAttempts}
                             {isExpanded ? (
@@ -619,17 +635,23 @@ export default function AttemptedQuizzesPage() {
                         </td>
                         <td className="px-4 py-4 text-center">
                           <span
-                            className={`px-2 py-1 rounded ${getPerformanceColor(
-                              stats.highestScore
-                            )}`}
+                            className={`px-2 py-1 rounded ${
+                              stats.highestScore >= 90
+                                ? "bg-green-900/40 text-green-300 border border-green-700/40"
+                                : stats.highestScore >= 80
+                                ? "bg-blue-900/40 text-blue-300 border border-blue-700/40"
+                                : stats.highestScore >= 70
+                                ? "bg-yellow-900/40 text-yellow-300 border border-yellow-700/40"
+                                : "bg-red-900/40 text-red-300 border border-red-700/40"
+                            }`}
                           >
                             {Math.round(stats.highestScore)}%
                           </span>
                         </td>
-                        <td className="px-4 py-4 text-center">
+                        <td className="px-4 py-4 text-center text-gray-300">
                           {Math.round(stats.averageScore)}%
                         </td>
-                        <td className="px-4 py-4 text-center">
+                        <td className="px-4 py-4 text-center text-gray-300">
                           {stats.totalAttempts > 0
                             ? `${Math.round(
                                 (stats.passedAttempts / stats.totalAttempts) *
@@ -643,7 +665,7 @@ export default function AttemptedQuizzesPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-8 px-2"
+                                className="h-8 px-2 border-blue-700/40 bg-blue-900/20 text-blue-300 hover:bg-blue-900/40"
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
@@ -651,7 +673,7 @@ export default function AttemptedQuizzesPage() {
                             <Link href={`/content/${quiz.id}`}>
                               <Button
                                 size="sm"
-                                className="bg-blue-600 hover:bg-blue-700 text-white h-8 px-2"
+                                className="bg-blue-600/80 hover:bg-blue-600 text-white h-8 px-2"
                               >
                                 <RotateCcw className="h-4 w-4" />
                               </Button>
@@ -661,34 +683,34 @@ export default function AttemptedQuizzesPage() {
                       </tr>
                       {isExpanded && (
                         <tr>
-                          <td colSpan={7} className="p-0 border-b">
-                            <div className="bg-gray-50 p-4">
-                              <h4 className="text-sm font-medium mb-2">
+                          <td colSpan={7} className="p-0 border-b border-gray-700/30">
+                            <div className="bg-gray-800/60 p-4">
+                              <h4 className="text-sm font-medium mb-2 text-gray-300">
                                 Attempt History
                               </h4>
                               <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                   <thead>
-                                    <tr className="border-b border-gray-200">
-                                      <th className="px-3 py-2 text-left">
+                                    <tr className="border-b border-gray-700/30">
+                                      <th className="px-3 py-2 text-left text-gray-400">
                                         Attempt #
                                       </th>
-                                      <th className="px-3 py-2 text-center">
+                                      <th className="px-3 py-2 text-center text-gray-400">
                                         Score
                                       </th>
-                                      <th className="px-3 py-2 text-center">
+                                      <th className="px-3 py-2 text-center text-gray-400">
                                         Correct
                                       </th>
-                                      <th className="px-3 py-2 text-center">
+                                      <th className="px-3 py-2 text-center text-gray-400">
                                         Time Spent
                                       </th>
-                                      <th className="px-3 py-2 text-center">
+                                      <th className="px-3 py-2 text-center text-gray-400">
                                         Date
                                       </th>
-                                      <th className="px-3 py-2 text-center">
+                                      <th className="px-3 py-2 text-center text-gray-400">
                                         Status
                                       </th>
-                                      <th className="px-3 py-2 text-right">
+                                      <th className="px-3 py-2 text-right text-gray-400">
                                         Actions
                                       </th>
                                     </tr>
@@ -697,25 +719,41 @@ export default function AttemptedQuizzesPage() {
                                     {completedAttempts.map((attempt, index) => (
                                       <tr
                                         key={attempt.id}
-                                        className={`border-b border-gray-100 ${getPerformanceBgColor(
-                                          attempt.score
-                                        )}`}
+                                        className={`border-b border-gray-700/20 ${
+                                          attempt.score >= 90
+                                            ? "bg-green-900/20"
+                                            : attempt.score >= 80
+                                            ? "bg-blue-900/20"
+                                            : attempt.score >= 70
+                                            ? "bg-yellow-900/20"
+                                            : "bg-red-900/20"
+                                        }`}
                                       >
-                                        <td className="px-3 py-2">
+                                        <td className="px-3 py-2 text-gray-300">
                                           #{stats.totalAttempts - index}
                                         </td>
                                         <td className="px-3 py-2 text-center font-medium">
-                                          {Math.round(attempt.score)}%
+                                          <span className={`${
+                                            attempt.score >= 90
+                                              ? "text-green-300"
+                                              : attempt.score >= 80
+                                              ? "text-blue-300"
+                                              : attempt.score >= 70
+                                              ? "text-yellow-300"
+                                              : "text-red-300"
+                                          }`}>
+                                            {Math.round(attempt.score)}%
+                                          </span>
                                         </td>
-                                        <td className="px-3 py-2 text-center">
+                                        <td className="px-3 py-2 text-center text-gray-300">
                                           {attempt.correctAnswers}/
                                           {attempt.totalQuestions ||
                                             quiz.questionCount}
                                         </td>
-                                        <td className="px-3 py-2 text-center">
+                                        <td className="px-3 py-2 text-center text-gray-300">
                                           {formatTimeSpent(attempt.timeSpent)}
                                         </td>
-                                        <td className="px-3 py-2 text-center">
+                                        <td className="px-3 py-2 text-center text-gray-300">
                                           {formatDate(attempt.completedAt)}
                                         </td>
                                         <td className="px-3 py-2 text-center">
@@ -727,8 +765,8 @@ export default function AttemptedQuizzesPage() {
                                             }
                                             className={
                                               attempt.passed
-                                                ? "bg-green-100 text-green-800"
-                                                : ""
+                                                ? "bg-green-900/40 text-green-300 border-green-700/40"
+                                                : "bg-red-900/40 text-red-300 border-red-700/40"
                                             }
                                           >
                                             {attempt.passed
@@ -743,7 +781,7 @@ export default function AttemptedQuizzesPage() {
                                             <Button
                                               size="sm"
                                               variant="ghost"
-                                              className="h-7 px-2"
+                                              className="h-7 px-2 text-blue-300 hover:bg-blue-900/30 hover:text-blue-200"
                                             >
                                               <FileText className="h-3 w-3 mr-1" />
                                               Details
@@ -771,7 +809,7 @@ export default function AttemptedQuizzesPage() {
       {/* Summary */}
       {filteredQuizzes.length > 0 && (
         <div className="mt-8 text-center">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-400">
             Showing {filteredQuizzes.length} of{" "}
             {quizzes.filter((q) => getQuizStats(q).hasAttempts).length}{" "}
             attempted quizzes

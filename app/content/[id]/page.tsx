@@ -18,6 +18,9 @@ import {
   CheckCircle,
   Circle,
   Info,
+  History,
+  BarChart3,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +40,7 @@ import { quizService } from "@/lib/services/quiz-service";
 import type { IQuiz } from "@/lib/types/interfaces";
 import { SUCCESS_CODE } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
+import { trackContentView, trackQuizStart } from "@/lib/utils/analytics";
 
 interface QuestionAnswer {
   questionId: number;
@@ -100,6 +104,33 @@ type QuestionType =
   | "LISTENING";
 type DifficultyLevel = "INTERMEDIATE" | "ADVANCED" | "BEGINNER";
 type NavigationMode = "sequential" | "back-only" | "free-navigation";
+
+interface QuizAttempt {
+  id: string;
+  quizId: string;
+  userId: string;
+  score: number;
+  totalQuestions: number | null;
+  correctAnswers: number;
+  timeSpent: number;
+  completedAt: string | null;
+  passed: boolean;
+}
+
+interface QuizWithAttempts {
+  id: string;
+  title: string;
+  description: string;
+  category: string | null;
+  difficulty: string | null;
+  questionCount: number;
+  tags: string[];
+  passingScore: number;
+  maxAttempts: number;
+  hasTimer: boolean;
+  timeLimit: number;
+  quizAttempts: QuizAttempt[];
+}
 
 const mapApiQuestionToState = (question: IQuestion) => {
   const baseQuestion = {
@@ -178,16 +209,41 @@ export default function InteractionPage() {
   const { toast } = useToast();
   const [content, setContent] = useState<IQuiz | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [quizAttempts, setQuizAttempts] = useState<QuizAttempt[]>([]);
+  const [hasAttempted, setHasAttempted] = useState(false);
+  const [attemptStats, setAttemptStats] = useState<{
+    totalAttempts: number;
+    highestScore: number;
+    averageScore: number;
+    passRate: number;
+  }>({
+    totalAttempts: 0,
+    highestScore: 0,
+    averageScore: 0,
+    passRate: 0,
+  });
+  
   const router = useRouter();
   const routeParams = useParams();
   const quizId = routeParams.id as string;
 
   useEffect(() => {
-    const fetchQuiz = async () => {
+    const fetchQuizAndAttempts = async () => {
       try {
-        const response = await quizService.getQuizById(quizId);
-        if (response.meta.code === SUCCESS_CODE && response.data) {
-          setContent(mapApiQuizToState(response.data));
+        setIsLoading(true);
+        
+        // Fetch quiz content
+        const quizResponse = await quizService.getQuizById(quizId);
+        
+        // Fetch user's attempts for this quiz
+        const attemptsResponse = await quizService.getMyQuizAttempts();
+        
+        if (quizResponse.meta.code === SUCCESS_CODE && quizResponse.data) {
+          const mappedContent = mapApiQuizToState(quizResponse.data);
+          setContent(mappedContent);
+          
+          // Track content view
+          trackContentView(quizId, 'Quiz');
         } else {
           toast({
             variant: "destructive",
@@ -195,23 +251,56 @@ export default function InteractionPage() {
             description: "Failed to load quiz content. Please try again.",
           });
         }
+        
+        if (attemptsResponse.meta.code === SUCCESS_CODE && attemptsResponse.data) {
+          // Find attempts for this specific quiz
+          const currentQuiz = attemptsResponse.data.find(q => q.id === quizId);
+          
+          if (currentQuiz && currentQuiz.quizAttempts.length > 0) {
+            const completedAttempts = currentQuiz.quizAttempts.filter(
+              attempt => attempt.completedAt !== null
+            );
+            
+            setQuizAttempts(completedAttempts);
+            setHasAttempted(completedAttempts.length > 0);
+            
+            // Calculate stats
+            if (completedAttempts.length > 0) {
+              const highestScore = Math.max(...completedAttempts.map(a => a.score));
+              const averageScore = completedAttempts.reduce((sum, a) => sum + a.score, 0) / completedAttempts.length;
+              const passedAttempts = completedAttempts.filter(a => a.passed).length;
+              const passRate = completedAttempts.length > 0 ? (passedAttempts / completedAttempts.length) * 100 : 0;
+              
+              setAttemptStats({
+                totalAttempts: completedAttempts.length,
+                highestScore,
+                averageScore,
+                passRate,
+              });
+            }
+          }
+        }
       } catch (error) {
         toast({
           variant: "destructive",
           title: "Error",
-          description:
-            "An error occurred while loading the quiz. Please try again.",
+          description: "An error occurred while loading data. Please try again.",
         });
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchQuiz();
+    fetchQuizAndAttempts();
   }, [quizId, toast]);
 
   const handleStart = async () => {
     try {
+      // Track quiz start event
+      if (content) {
+        trackQuizStart(quizId, content.title);
+      }
+      
       const response = await quizService.startQuizAttempt(quizId);
       if (response.meta.code === SUCCESS_CODE && response.data) {
         router.push(`/quiz/${quizId}/attempt/${response.data.id}`);
@@ -258,6 +347,10 @@ export default function InteractionPage() {
       default:
         return "bg-blue-500";
     }
+  };
+
+  const handleViewAttemptHistory = () => {
+    router.push(`/quiz/${quizId}/attempt`);
   };
 
   if (isLoading) {
@@ -402,6 +495,61 @@ export default function InteractionPage() {
               </div>
             </div>
 
+            {/* User's Attempt Stats - Show only if user has attempted this quiz */}
+            {hasAttempted && (
+              <div className="bg-gray-800/70 p-4 rounded-lg border border-blue-700/30 backdrop-blur-sm">
+                <h3 className="font-semibold text-blue-400 mb-3 flex items-center">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Your Quiz History
+                </h3>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                  <div className="bg-gray-700/50 rounded-lg p-3 flex flex-col items-center justify-center">
+                    <div className="bg-blue-900/30 w-8 h-8 rounded-full flex items-center justify-center mb-1">
+                      <History className="h-4 w-4 text-blue-400" />
+                    </div>
+                    <span className="text-lg font-semibold text-blue-400">{attemptStats.totalAttempts}</span>
+                    <span className="text-xs text-gray-400">Attempts</span>
+                  </div>
+                  
+                  <div className="bg-gray-700/50 rounded-lg p-3 flex flex-col items-center justify-center">
+                    <div className="bg-green-900/30 w-8 h-8 rounded-full flex items-center justify-center mb-1">
+                      <Trophy className="h-4 w-4 text-green-400" />
+                    </div>
+                    <span className="text-lg font-semibold text-green-400">{Math.round(attemptStats.highestScore)}%</span>
+                    <span className="text-xs text-gray-400">Best Score</span>
+                  </div>
+                  
+                  <div className="bg-gray-700/50 rounded-lg p-3 flex flex-col items-center justify-center">
+                    <div className="bg-purple-900/30 w-8 h-8 rounded-full flex items-center justify-center mb-1">
+                      <BarChart3 className="h-4 w-4 text-purple-400" />
+                    </div>
+                    <span className="text-lg font-semibold text-purple-400">{Math.round(attemptStats.averageScore)}%</span>
+                    <span className="text-xs text-gray-400">Average Score</span>
+                  </div>
+                  
+                  <div className="bg-gray-700/50 rounded-lg p-3 flex flex-col items-center justify-center">
+                    <div className="bg-yellow-900/30 w-8 h-8 rounded-full flex items-center justify-center mb-1">
+                      <CheckCircle className="h-4 w-4 text-yellow-400" />
+                    </div>
+                    <span className="text-lg font-semibold text-yellow-400">{Math.round(attemptStats.passRate)}%</span>
+                    <span className="text-xs text-gray-400">Pass Rate</span>
+                  </div>
+                </div>
+                
+                <div className="flex justify-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleViewAttemptHistory}
+                    className="border-blue-700/40 bg-blue-900/20 text-blue-300 hover:bg-blue-900/40"
+                  >
+                    <History className="h-4 w-4 mr-2" />
+                    View Attempt History
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="text-center text-sm text-gray-400">
               Created by:{" "}
               <span className="font-medium text-gray-300">
@@ -454,15 +602,17 @@ export default function InteractionPage() {
               </div>
             </div>
 
-            <div className="flex gap-4 justify-center pt-2">
+            <div className="flex flex-wrap gap-4 justify-center pt-2">
               <Button
                 size="lg"
                 onClick={handleStart}
                 className="bg-gradient-to-r from-teal-500 to-blue-600 hover:from-teal-400 hover:to-blue-500 text-white px-8 py-4 text-lg shadow-lg shadow-blue-900/20 transform hover:scale-105 transition-all duration-200"
               >
                 <Play className="h-5 w-5 mr-2" />
-                Start Quiz
+                {hasAttempted ? "Retake Quiz" : "Start Quiz"}
               </Button>
+        
+              
               <Button
                 size="lg"
                 variant="outline"

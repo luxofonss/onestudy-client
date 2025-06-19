@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 import Link from "next/link";
 
 interface LogoProps {
@@ -54,21 +55,9 @@ export function Logo({
         className={`relative ${sizeClasses.container} bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center shadow-lg`}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl opacity-20 blur-sm"></div>
-        <div className="relative flex items-center justify-center">
-          <span
-            className={`${variantClasses.text} font-bold ${sizeClasses.text}`}
-          >
-            1
-          </span>
-          <div
-            className={`absolute -top-1 -right-1 ${sizeClasses.dot} bg-orange-400 rounded-full flex items-center justify-center`}
-          >
-            <div
-              className={`${sizeClasses.innerDot} bg-white rounded-full`}
-            ></div>
-          </div>
-        </div>
-      </div>
+                <div className="absolute inset-0 rounded-md bg-gradient-to-br from-pink-400/40 to-purple-500/40 blur-sm"></div>
+                <Sparkles className="h-5 w-5 text-white relative z-10" />
+              </div>
       <span className={`font-bold text-xl ${variantClasses.brandName}`}>
         OneStudy
       </span>

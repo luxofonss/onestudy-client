@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import Link from "next/link";
 import { quizService } from "@/lib/services/quiz-service";
+import { event } from "@/lib/utils/analytics";
 
 interface QuizAttempt {
   id: string;
@@ -62,18 +63,57 @@ export default function QuizAttemptsPage() {
 
   useEffect(() => {
     fetchQuizAttempts();
+    
+    // Track page view with quiz ID
+    event({
+      action: 'quiz_attempts_page_view',
+      category: 'Quiz History',
+      label: `Quiz ID: ${quizId}`,
+    });
   }, [quizId]);
 
   const fetchQuizAttempts = async () => {
     try {
       setLoading(true);
+      
+      // Track attempt to fetch quiz history
+      event({
+        action: 'quiz_attempts_fetch',
+        category: 'Quiz History',
+        label: `Quiz ID: ${quizId}`,
+      });
+      
       const response = await quizService.getMyQuizAttempts();
       if (response.data) {
         const foundQuiz = response.data.find((q) => q.id === quizId);
         setQuiz(foundQuiz || null);
+        
+        // Track successful fetch with attempt count
+        event({
+          action: 'quiz_attempts_fetch_success',
+          category: 'Quiz History',
+          label: `Quiz ID: ${quizId}`,
+          value: foundQuiz?.quizAttempts?.length || 0,
+        });
+        
+        // If no quiz found, track that too
+        if (!foundQuiz) {
+          event({
+            action: 'quiz_attempts_not_found',
+            category: 'Quiz History',
+            label: `Quiz ID: ${quizId}`,
+          });
+        }
       }
     } catch (error) {
       console.error("Failed to fetch quiz attempts:", error);
+      
+      // Track fetch error
+      event({
+        action: 'quiz_attempts_fetch_error',
+        category: 'Quiz History',
+        label: `Quiz ID: ${quizId}`,
+      });
     } finally {
       setLoading(false);
     }
@@ -169,14 +209,48 @@ export default function QuizAttemptsPage() {
     return `${diffInWeeks}w ago`;
   };
 
+  // Add tracking to navigation actions
+  const handleViewAttemptDetails = (attemptId: string) => {
+    // Track attempt details view
+    event({
+      action: 'quiz_attempt_details_view',
+      category: 'Quiz History',
+      label: `Quiz ID: ${quizId}, Attempt ID: ${attemptId}`,
+    });
+    
+    router.push(`/quiz/${quizId}/attempt/${attemptId}/result`);
+  };
+  
+  const handleStartQuiz = () => {
+    // Track quiz start from attempts page
+    event({
+      action: 'quiz_start_from_attempts',
+      category: 'Quiz History',
+      label: `Quiz ID: ${quizId}`,
+    });
+    
+    router.push(`/content/${quizId}`);
+  };
+  
+  const handleBackToAttempts = () => {
+    // Track navigation back to all attempts
+    event({
+      action: 'back_to_all_attempts',
+      category: 'Quiz History',
+      label: 'Navigation',
+    });
+    
+    router.push('/attempted-quizzes');
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+          <div className="h-8 bg-gray-800 rounded w-1/4"></div>
           <div className="grid grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-20 bg-gray-200 rounded"></div>
+              <div key={i} className="h-20 bg-gray-800 rounded"></div>
             ))}
           </div>
         </div>
@@ -187,17 +261,17 @@ export default function QuizAttemptsPage() {
   if (!quiz) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <Card>
+        <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
           <CardContent className="p-8 text-center">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-medium text-gray-200 mb-2">
               Quiz not found
             </h3>
-            <p className="text-gray-500 mb-4">
+            <p className="text-gray-400 mb-4">
               The quiz you're looking for doesn't exist or you haven't attempted
               it yet.
             </p>
             <Link href="/attempted-quizzes">
-              <Button>Back to Attempted Quizzes</Button>
+              <Button className="bg-blue-600/80 hover:bg-blue-600 text-white">Back to Attempted Quizzes</Button>
             </Link>
           </CardContent>
         </Card>
@@ -214,30 +288,39 @@ export default function QuizAttemptsPage() {
     );
 
   return (
-    <div className="container mx-auto px-4 py-6 animate-fade-in">
+    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-950 text-gray-100 container mx-auto px-4 py-6 animate-fade-in">
       <div className="mb-6">
-        <Link href="/attempted-quizzes">
-          <Button variant="ghost" size="sm" className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Attempted Quizzes
-          </Button>
-        </Link>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="mb-4 text-gray-300 hover:text-gray-100 hover:bg-gray-800/50"
+          onClick={handleBackToAttempts}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Attempted Quizzes
+        </Button>
         <PageHeader title={quiz.title} description={quiz.description} />
       </div>
 
       {/* Quiz Info - Compact */}
-      <Card className="mb-6">
+      <Card className="mb-6 border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
         <CardContent className="p-4">
           <div className="flex flex-wrap gap-2 mb-3">
             {quiz.difficulty && (
-              <Badge variant="outline">{quiz.difficulty}</Badge>
+              <Badge variant="outline" className="border-gray-700/40 bg-gray-800/40 text-gray-300">
+                {quiz.difficulty}
+              </Badge>
             )}
-            {quiz.category && <Badge variant="outline">{quiz.category}</Badge>}
+            {quiz.category && (
+              <Badge variant="outline" className="border-gray-700/40 bg-gray-800/40 text-gray-300">
+                {quiz.category}
+              </Badge>
+            )}
             {quiz.tags.slice(0, 3).map((tag, index) => (
               <Badge
                 key={index}
                 variant="outline"
-                className="border-blue-300 text-blue-600"
+                className="border-blue-700/40 bg-blue-900/20 text-blue-300"
               >
                 {tag}
               </Badge>
@@ -245,7 +328,7 @@ export default function QuizAttemptsPage() {
             {quiz.tags.length > 3 && (
               <Badge
                 variant="outline"
-                className="border-gray-300 text-gray-600"
+                className="border-gray-700/40 bg-gray-800/40 text-gray-300"
               >
                 +{quiz.tags.length - 3} more
               </Badge>
@@ -253,31 +336,31 @@ export default function QuizAttemptsPage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
             <div className="flex items-center">
-              <FileText className="h-4 w-4 text-gray-400 mr-2" />
-              <span className="text-gray-500">Questions:</span>
-              <span className="ml-1 font-medium">{quiz.questionCount}</span>
+              <FileText className="h-4 w-4 text-blue-400 mr-2" />
+              <span className="text-gray-400">Questions:</span>
+              <span className="ml-1 font-medium text-gray-200">{quiz.questionCount}</span>
             </div>
             <div className="flex items-center">
-              <Target className="h-4 w-4 text-gray-400 mr-2" />
-              <span className="text-gray-500">Pass:</span>
-              <span className="ml-1 font-medium">{quiz.passingScore}%</span>
+              <Target className="h-4 w-4 text-green-400 mr-2" />
+              <span className="text-gray-400">Pass:</span>
+              <span className="ml-1 font-medium text-gray-200">{quiz.passingScore}%</span>
             </div>
             <div className="flex items-center">
-              <User className="h-4 w-4 text-gray-400 mr-2" />
-              <span className="text-gray-500">Max:</span>
-              <span className="ml-1 font-medium">{quiz.maxAttempts}</span>
+              <User className="h-4 w-4 text-purple-400 mr-2" />
+              <span className="text-gray-400">Max:</span>
+              <span className="ml-1 font-medium text-gray-200">{quiz.maxAttempts}</span>
             </div>
             <div className="flex items-center">
-              <Timer className="h-4 w-4 text-gray-400 mr-2" />
-              <span className="text-gray-500">Time:</span>
-              <span className="ml-1 font-medium">
+              <Timer className="h-4 w-4 text-yellow-400 mr-2" />
+              <span className="text-gray-400">Time:</span>
+              <span className="ml-1 font-medium text-gray-200">
                 {quiz.hasTimer ? `${quiz.timeLimit}min` : "Unlimited"}
               </span>
             </div>
             <div className="flex items-center">
-              <BarChart3 className="h-4 w-4 text-gray-400 mr-2" />
-              <span className="text-gray-500">Left:</span>
-              <span className="ml-1 font-medium">
+              <BarChart3 className="h-4 w-4 text-orange-400 mr-2" />
+              <span className="text-gray-400">Left:</span>
+              <span className="ml-1 font-medium text-gray-200">
                 {quiz.maxAttempts - (stats?.totalAttempts || 0)}
               </span>
             </div>
@@ -288,98 +371,106 @@ export default function QuizAttemptsPage() {
       {/* Compact Stats */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <Card className="border-blue-100">
+          <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
             <CardContent className="p-3 text-center">
+              <div className="bg-blue-900/30 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Trophy className="h-5 w-5 text-blue-400" />
+              </div>
               <div className="flex items-center justify-center mb-1">
-                <Trophy className="h-4 w-4 text-blue-600 mr-1" />
-                <span className="text-lg font-bold text-blue-600">
+                <span className="text-lg font-bold text-blue-400">
                   {stats.totalAttempts}
                 </span>
               </div>
-              <p className="text-xs text-gray-600">Attempts</p>
+              <p className="text-xs text-gray-400">Attempts</p>
             </CardContent>
           </Card>
-          <Card className="border-green-100">
+          <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
             <CardContent className="p-3 text-center">
+              <div className="bg-green-900/30 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2">
+                <TrendingUp className="h-5 w-5 text-green-400" />
+              </div>
               <div className="flex items-center justify-center mb-1">
-                <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
-                <span className="text-lg font-bold text-green-600">
+                <span className="text-lg font-bold text-green-400">
                   {Math.round(stats.highestScore)}%
                 </span>
               </div>
-              <p className="text-xs text-gray-600">Best Score</p>
+              <p className="text-xs text-gray-400">Best Score</p>
             </CardContent>
           </Card>
-          <Card className="border-purple-100">
+          <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
             <CardContent className="p-3 text-center">
+              <div className="bg-purple-900/30 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Target className="h-5 w-5 text-purple-400" />
+              </div>
               <div className="flex items-center justify-center mb-1">
-                <Target className="h-4 w-4 text-purple-600 mr-1" />
-                <span className="text-lg font-bold text-purple-600">
+                <span className="text-lg font-bold text-purple-400">
                   {Math.round(stats.averageScore)}%
                 </span>
               </div>
-              <p className="text-xs text-gray-600">Average</p>
+              <p className="text-xs text-gray-400">Average</p>
             </CardContent>
           </Card>
-          <Card className="border-orange-100">
+          <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
             <CardContent className="p-3 text-center">
+              <div className="bg-orange-900/30 w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Award className="h-5 w-5 text-orange-400" />
+              </div>
               <div className="flex items-center justify-center mb-1">
-                <Award className="h-4 w-4 text-orange-600 mr-1" />
-                <span className="text-lg font-bold text-orange-600">
+                <span className="text-lg font-bold text-orange-400">
                   {Math.round(stats.passRate)}%
                 </span>
               </div>
-              <p className="text-xs text-gray-600">Pass Rate</p>
+              <p className="text-xs text-gray-400">Pass Rate</p>
             </CardContent>
           </Card>
         </div>
       )}
 
       {/* Main Content - Attempts List */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center justify-between">
+      <Card className="border-gray-700/30 bg-gray-800/20 backdrop-blur-sm shadow-md">
+        <CardHeader className="pb-3 border-b border-gray-700/50">
+          <CardTitle className="text-lg flex items-center justify-between text-gray-100">
             <span>Attempt History ({completedAttempts.length})</span>
-            <Link href={`/content/${quiz.id}`}>
-              <Button
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <Play className="h-4 w-4 mr-1" />
-                {completedAttempts.length > 0 ? "Retake" : "Start Quiz"}
-              </Button>
-            </Link>
+            <Button
+              size="sm"
+              className="bg-blue-600/80 hover:bg-blue-600 text-white"
+              onClick={handleStartQuiz}
+            >
+              <Play className="h-4 w-4 mr-1" />
+              {completedAttempts.length > 0 ? "Retake" : "Start Quiz"}
+            </Button>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {completedAttempts.length === 0 ? (
             <div className="p-8 text-center">
-              <Trophy className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Trophy className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-200 mb-2">
                 No completed attempts
               </h3>
-              <p className="text-gray-500 mb-4">
+              <p className="text-gray-400 mb-4">
                 You haven't completed this quiz yet.
               </p>
-              <Link href={`/content/${quiz.id}`}>
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                  Start Quiz
-                </Button>
-              </Link>
+              <Button 
+                className="bg-blue-600/80 hover:bg-blue-600 text-white"
+                onClick={handleStartQuiz}
+              >
+                Start Quiz
+              </Button>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-gray-700/30">
               {completedAttempts.map((attempt, index) => (
                 <div
                   key={attempt.id}
-                  className="p-4 hover:bg-gray-50 transition-colors"
+                  className="p-4 hover:bg-gray-800/40 transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       {/* Attempt Number */}
                       <div className="flex-shrink-0">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                          <span className="text-sm font-bold text-blue-600">
+                        <div className="w-10 h-10 rounded-full bg-blue-900/30 flex items-center justify-center border border-blue-700/40">
+                          <span className="text-sm font-bold text-blue-300">
                             #{getAttemptNumber(attempt, quiz.quizAttempts)}
                           </span>
                         </div>
@@ -388,9 +479,15 @@ export default function QuizAttemptsPage() {
                       {/* Score and Status */}
                       <div className="flex items-center space-x-3">
                         <div
-                          className={`px-3 py-1 rounded-lg border ${getPerformanceColor(
-                            attempt.score
-                          )}`}
+                          className={`px-3 py-1 rounded-lg ${
+                            attempt.score >= 90
+                              ? "bg-green-900/40 text-green-300 border border-green-700/40"
+                              : attempt.score >= 80
+                              ? "bg-blue-900/40 text-blue-300 border border-blue-700/40"
+                              : attempt.score >= 70
+                              ? "bg-yellow-900/40 text-yellow-300 border border-yellow-700/40"
+                              : "bg-red-900/40 text-red-300 border border-red-700/40"
+                          }`}
                         >
                           <span className="font-bold text-lg">
                             {Math.round(attempt.score)}%
@@ -398,13 +495,16 @@ export default function QuizAttemptsPage() {
                         </div>
                         <div className="flex items-center space-x-2">
                           {attempt.passed ? (
-                            <CheckCircle className="h-5 w-5 text-green-600" />
+                            <CheckCircle className="h-5 w-5 text-green-400" />
                           ) : (
-                            <XCircle className="h-5 w-5 text-red-600" />
+                            <XCircle className="h-5 w-5 text-red-400" />
                           )}
                           <Badge
-                            variant={attempt.passed ? "default" : "destructive"}
-                            className="text-xs"
+                            className={
+                              attempt.passed
+                                ? "bg-green-900/40 text-green-300 border-green-700/40"
+                                : "bg-red-900/40 text-red-300 border-red-700/40"
+                            }
                           >
                             {attempt.passed ? "PASSED" : "FAILED"}
                           </Badge>
@@ -412,19 +512,19 @@ export default function QuizAttemptsPage() {
                       </div>
 
                       {/* Performance Details */}
-                      <div className="hidden md:flex items-center space-x-4 text-sm text-gray-600">
+                      <div className="hidden md:flex items-center space-x-4 text-sm text-gray-400">
                         <div className="flex items-center">
-                          <Target className="h-4 w-4 mr-1" />
+                          <Target className="h-4 w-4 mr-1 text-green-400" />
                           <span>
                             {attempt.correctAnswers}/{quiz.questionCount}
                           </span>
                         </div>
                         <div className="flex items-center">
-                          <Clock className="h-4 w-4 mr-1" />
+                          <Clock className="h-4 w-4 mr-1 text-blue-400" />
                           <span>{formatTimeSpent(attempt.timeSpent)}</span>
                         </div>
                         <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
+                          <Calendar className="h-4 w-4 mr-1 text-purple-400" />
                           <span>
                             {getTimeSinceAttempt(attempt.completedAt)}
                           </span>
@@ -434,23 +534,20 @@ export default function QuizAttemptsPage() {
 
                     {/* Action Button */}
                     <div className="flex items-center space-x-2">
-                      <Link
-                        href={`/quiz/${quiz.id}/attempt/${attempt.id}/result`}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-blue-700/40 bg-blue-900/20 text-blue-300 hover:bg-blue-900/40"
+                        onClick={() => handleViewAttemptDetails(attempt.id)}
                       >
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-blue-300 text-blue-600 hover:bg-blue-50"
-                        >
-                          <FileText className="h-4 w-4 mr-1" />
-                          View Details
-                        </Button>
-                      </Link>
+                        <FileText className="h-4 w-4 mr-1" />
+                        View Details
+                      </Button>
                     </div>
                   </div>
 
                   {/* Mobile Details */}
-                  <div className="md:hidden mt-3 flex items-center justify-between text-sm text-gray-600">
+                  <div className="md:hidden mt-3 flex items-center justify-between text-sm text-gray-400">
                     <div className="flex items-center space-x-3">
                       <span>
                         {attempt.correctAnswers}/{quiz.questionCount} correct
@@ -463,7 +560,7 @@ export default function QuizAttemptsPage() {
 
                   {/* Progress Bar */}
                   <div className="mt-3">
-                    <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                    <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
                       <span>
                         Accuracy:{" "}
                         {Math.round(
@@ -473,16 +570,16 @@ export default function QuizAttemptsPage() {
                       </span>
                       <span>{formatDate(attempt.completedAt)}</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-800/60 rounded-full h-2">
                       <div
                         className={`h-2 rounded-full transition-all duration-300 ${
                           attempt.score >= 90
-                            ? "bg-green-500"
+                            ? "bg-green-500/80"
                             : attempt.score >= 80
-                            ? "bg-blue-500"
+                            ? "bg-blue-500/80"
                             : attempt.score >= 70
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
+                            ? "bg-yellow-500/80"
+                            : "bg-red-500/80"
                         }`}
                         style={{
                           width: `${
@@ -501,18 +598,21 @@ export default function QuizAttemptsPage() {
 
       {/* Action Buttons */}
       <div className="mt-6 flex gap-3 justify-center">
-        <Link href={`/content/${quiz.id}`}>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-            <Play className="h-4 w-4 mr-2" />
-            {completedAttempts.length > 0 ? "Retake Quiz" : "Start Quiz"}
-          </Button>
-        </Link>
-        <Link href="/attempted-quizzes">
-          <Button variant="outline">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to All Attempts
-          </Button>
-        </Link>
+        <Button 
+          className="bg-blue-600/80 hover:bg-blue-600 text-white"
+          onClick={handleStartQuiz}
+        >
+          <Play className="h-4 w-4 mr-2" />
+          {completedAttempts.length > 0 ? "Retake Quiz" : "Start Quiz"}
+        </Button>
+        <Button 
+          variant="outline" 
+          className="border-gray-700 text-gray-300 hover:bg-gray-800/50"
+          onClick={handleBackToAttempts}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to All Attempts
+        </Button>
       </div>
     </div>
   );

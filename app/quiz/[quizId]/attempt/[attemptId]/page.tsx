@@ -38,6 +38,7 @@ import { resourceService } from "@/lib/services/resource-service";
 import { SUCCESS_CODE } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 import { ListeningQuestion } from "@/components/quiz/ListeningQuestion";
+import { event } from "@/lib/utils/analytics";
 
 // --- API and State Interfaces ---
 
@@ -657,63 +658,98 @@ export default function QuizAttemptPage() {
   };
 
   const submitQuiz = async () => {
-    setIsSubmitting(true);
-    setIsTimerActive(false);
-    if (quizTimerRef.current) clearInterval(quizTimerRef.current);
-
-    // Final save for the current question if any pending changes
-    // This logic might be complex depending on autosave strategy.
-    // For now, assume answers are reasonably up-to-date via onBlur/onChange handlers.
-
-    toast({ title: "Submitting Quiz", description: "Please wait..." });
-
     try {
-      // The API call to finalize/submit the attempt
-      // This might be different from submitting individual questions
-      // For example, it might just be a POST to /quiz-attempts/{attemptId}/complete
-      // The user's current code navigates to results page.
-      // Let's assume there's a service call for this.
-      const response = await quizService.completeQuizAttempt(params.attemptId);
-      if (response?.meta?.code === SUCCESS_CODE) {
-        if (params.attemptId) {
-          // const response = await quizService.completeQuizAttempt(params.attemptId as string);
-          // if (response.meta.code === SUCCESS_CODE) {
-          router.push(
-            `/quiz/${params.quizId}/attempt/${params.attemptId}/result`
-          );
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Submission Failed",
-            description: response.meta.message,
-          });
-          setIsSubmitting(false);
-        }
+      setIsSubmitting(true);
+      
+      // Track quiz submission
+      event({
+        action: 'quiz_submit',
+        category: 'Quiz',
+        label: params.quizId,
+      });
+      
+      // Construct the request body
+      const requestBody = {
+        answers: Object.values(quizAnswers).map((answer) => {
+          // Base answer structure
+          const baseAnswer: SubmitQuestionBody = {
+            questionId: answer.questionId,
+            selectedOptions: null,
+            fillInBlanksAnswers: null,
+            answerText: null,
+            userAnswerTrueFalse: null,
+            timeTaken: answer.timeSpent,
+            audioUrl: null,
+          };
+
+          // Add type-specific fields
+          switch (answer.questionType) {
+            case "MULTIPLE_CHOICE":
+              baseAnswer.selectedOptions = Array.isArray(answer.selectedOptions)
+                ? answer.selectedOptions
+                : answer.selectedOptions
+                ? [answer.selectedOptions as string]
+                : [];
+              break;
+            case "FILL_IN_THE_BLANK":
+              baseAnswer.fillInBlanksAnswers = Array.isArray(
+                answer.fillInBlanksAnswers
+              )
+                ? answer.fillInBlanksAnswers
+                : [];
+              break;
+            case "TRUE_FALSE":
+              baseAnswer.userAnswerTrueFalse =
+                typeof answer.userAnswerTrueFalse === "boolean"
+                  ? answer.userAnswerTrueFalse
+                  : null;
+              break;
+            case "PRONUNCIATION":
+              baseAnswer.answerText =
+                typeof answer.answer === "string" ? answer.answer : null;
+              baseAnswer.audioUrl = answer.audioUrl || null;
+              break;
+            case "LISTENING":
+              baseAnswer.selectedOptions = Array.isArray(answer.selectedOptions)
+                ? answer.selectedOptions
+                : answer.selectedOptions
+                ? [answer.selectedOptions as string]
+                : [];
+              break;
+            default:
+              console.warn(
+                `Unhandled question type: ${answer.questionType} for question ${answer.questionId}`
+              );
+          }
+
+          return baseAnswer;
+        }),
+      };
+
+      // Submit the quiz
+      const response = await quizService.submitQuizAttempt(
+        params.attemptId,
+        requestBody
+      );
+
+      if (response.meta.code === SUCCESS_CODE) {
+        router.push(`/quiz/${params.quizId}/attempt/${params.attemptId}/result`);
       } else {
-        throw new Error("Attempt ID missing");
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to submit quiz. Please try again.",
+        });
       }
-      // Simulate submission for now as in original code
-      setTimeout(() => {
-        setIsSubmitting(false);
-        if (params.quizId && params.attemptId) {
-          router.push(
-            `/quiz/${params.quizId}/attempt/${params.attemptId}/result`
-          );
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Quiz or Attempt ID is missing for navigation.",
-          });
-        }
-      }, 1500);
     } catch (error) {
       console.error("Error submitting quiz:", error);
       toast({
         variant: "destructive",
-        title: "Submission Error",
-        description: "Could not submit the quiz.",
+        title: "Error",
+        description:
+          "An error occurred while submitting your quiz. Please try again.",
       });
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -938,28 +974,39 @@ export default function QuizAttemptPage() {
   };
 
   const handleNext = async () => {
-    if (!content?.questions || !canGoForward()) return;
-
-    // Save current answer (already handled by onBlur/onChange for most types)
-    // Explicit save might be needed if not relying on auto-save
-    const currentQ = content.questions[currentQuestion];
-    // await saveCurrentAnswerIfNeeded(currentQ); // Placeholder for explicit save
-
-    if (currentQuestion < content.questions.length - 1) {
-      setCurrentQuestion((prev) => prev + 1);
-    }
+    if (!canGoForward()) return;
+    
+    // Track question navigation
+    event({
+      action: 'quiz_next_question',
+      category: 'Quiz',
+      label: params.quizId,
+    });
+    
+    setCurrentQuestion((prev) => prev + 1);
   };
 
   const handlePrevious = async () => {
     if (!canGoBack()) return;
-    // await saveCurrentAnswerIfNeeded(content.questions[currentQuestion]); // Placeholder
+    
+    // Track question navigation
+    event({
+      action: 'quiz_previous_question',
+      category: 'Quiz',
+      label: params.quizId,
+    });
+    
     setCurrentQuestion((prev) => prev - 1);
   };
 
   const handleFinish = async () => {
-    if (!content?.questions) return;
-    // await saveCurrentAnswerIfNeeded(content.questions[currentQuestion]); // Placeholder
-    setProgress(100); // Visually mark as complete
+    // Track quiz finish attempt
+    event({
+      action: 'quiz_finish_attempt',
+      category: 'Quiz',
+      label: params.quizId,
+    });
+    
     submitQuiz();
   };
 
@@ -1045,6 +1092,13 @@ export default function QuizAttemptPage() {
         if (quizResponse.meta.code === SUCCESS_CODE && quizResponse.data) {
           const mappedQuiz = mapApiQuizToState(quizResponse.data);
           setContent(mappedQuiz);
+          
+          // Track quiz attempt start
+          event({
+            action: 'quiz_attempt_start',
+            category: 'Quiz',
+            label: `${params.quizId}: ${mappedQuiz.title}`,
+          });
 
           if (mappedQuiz.hasTimer) {
             setTimeRemaining(mappedQuiz.timeLimit); // timeLimit is already in seconds

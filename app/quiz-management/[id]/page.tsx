@@ -16,6 +16,8 @@ import {
   BarChart3,
   PieChart,
   Activity,
+  CheckCircle,
+  Award,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -188,6 +190,7 @@ function QuizManagementPage({ params }: { params: { id: string } }) {
       passRate: Math.round((passedAttempts / completedAttempts) * 100),
       completionRate: Math.round((completedAttempts / totalAttempts) * 100),
       scoreDistribution,
+      highestScore: Math.max(...userAttempts.filter((a) => a.status === "completed").map((a) => a.score)),
     }
   }
 
@@ -316,15 +319,15 @@ function QuizManagementPage({ params }: { params: { id: string } }) {
         <TabsContent value="overview" className="space-y-6">
           {/* Key Metrics */}
           <StatsGrid columns={4}>
-            <StatsCard icon={Users} value={analytics.totalAttempts} label="Total Attempts" color="text-blue-600" />
-            <StatsCard icon={Target} value={`${analytics.passRate}%`} label="Pass Rate" color="text-green-600" />
+            <StatsCard icon={Users} value={analytics.totalAttempts} label="Total Attempts" color="text-blue-400" />
+            <StatsCard icon={Target} value={`${analytics.passRate}%`} label="Pass Rate" color="text-green-400" />
             <StatsCard
               icon={TrendingUp}
               value={`${analytics.averageScore}%`}
               label="Average Score"
-              color="text-purple-600"
+              color="text-purple-400"
             />
-            <StatsCard icon={Clock} value={`${analytics.averageTime}m`} label="Avg. Time" color="text-orange-600" />
+            <StatsCard icon={Clock} value={`${analytics.averageTime}m`} label="Avg. Time" color="text-orange-400" />
           </StatsGrid>
 
           {/* Recent Activity */}
@@ -613,19 +616,19 @@ function QuizManagementPage({ params }: { params: { id: string } }) {
         <TabsContent value="analytics" className="space-y-6">
           {/* Analytics Overview */}
           <StatsGrid columns={4}>
-            <StatsCard icon={Users} value={analytics.totalAttempts} label="Total Attempts" color="text-blue-600" />
+            <StatsCard icon={Users} value={analytics.totalAttempts} label="Total Attempts" color="text-blue-400" />
             <StatsCard
-              icon={Target}
+              icon={CheckCircle}
               value={`${analytics.completionRate}%`}
               label="Completion Rate"
-              color="text-green-600"
+              color="text-green-400"
             />
-            <StatsCard icon={TrendingUp} value={`${analytics.passRate}%`} label="Pass Rate" color="text-purple-600" />
+            <StatsCard icon={TrendingUp} value={`${analytics.passRate}%`} label="Pass Rate" color="text-purple-400" />
             <StatsCard
-              icon={Clock}
-              value={`${analytics.averageTime}m`}
-              label="Avg. Completion Time"
-              color="text-orange-600"
+              icon={Award}
+              value={analytics.highestScore}
+              label="Highest Score"
+              color="text-orange-400"
             />
           </StatsGrid>
 

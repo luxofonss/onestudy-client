@@ -32,6 +32,7 @@ import {
   type PronunciationResult,
 } from "@/lib/services/pronunciation-service";
 import { SUCCESS_CODE } from "@/lib/constants";
+import { event } from "@/lib/utils/analytics";
 
 type DifficultyLevel = "EASY" | "MEDIUM" | "HARD" | "RANDOM";
 type RecordingState = "idle" | "recording" | "processing" | "completed";
@@ -51,6 +52,7 @@ export default function PronunciationTestPage() {
   const [totalAttempts, setTotalAttempts] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isPlayingReference, setIsPlayingReference] = useState(false);
+  const [isPlayingSlowReference, setIsPlayingSlowReference] = useState(false);
   const [isPlayingRecorded, setIsPlayingRecorded] = useState(false);
 
   // Audio recording refs
@@ -69,6 +71,14 @@ export default function PronunciationTestPage() {
   useEffect(() => {
     initializeMediaDevices();
     generateRandomSample();
+    
+    // Track page view with more details
+    event({
+      action: 'pronunciation_page_view',
+      category: 'Pronunciation',
+      label: 'Pronunciation Test Page',
+    });
+    
     return () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
@@ -85,6 +95,13 @@ export default function PronunciationTestPage() {
         },
       });
       streamRef.current = stream;
+
+      // Track successful microphone access
+      event({
+        action: 'microphone_access_granted',
+        category: 'Pronunciation',
+        label: 'Microphone Initialization',
+      });
 
       // Check for supported MIME types
       const mimeTypes = [
@@ -148,6 +165,13 @@ export default function PronunciationTestPage() {
       };
     } catch (error) {
       console.error("Media initialization error:", error);
+
+      // Track microphone access error
+      event({
+        action: 'microphone_access_error',
+        category: 'Pronunciation',
+        label: error instanceof Error ? error.message : 'Unknown error',
+      });
 
       // Check if it's a permission error
       if (error instanceof DOMException && error.name === "NotAllowedError") {
@@ -234,6 +258,13 @@ export default function PronunciationTestPage() {
     setIsLoading(true);
     setResult(null);
 
+    // Track sample generation attempt
+    event({
+      action: 'pronunciation_generate_sample',
+      category: 'Pronunciation',
+      label: difficulty,
+    });
+
     try {
       const response = await pronunciationService.getSample(
         difficulty,
@@ -242,11 +273,26 @@ export default function PronunciationTestPage() {
       if (response.meta.code === SUCCESS_CODE && response.data) {
         setCurrentSample(response.data);
         setCustomText("");
+        
+        // Track successful sample generation
+        event({
+          action: 'pronunciation_sample_success',
+          category: 'Pronunciation',
+          label: difficulty,
+          value: response.data.realTranscript.length,
+        });
       } else {
         toast({
           title: "Error",
           description: "Failed to generate sample. Please try again.",
           variant: "destructive",
+        });
+        
+        // Track sample generation error
+        event({
+          action: 'pronunciation_sample_error',
+          category: 'Pronunciation',
+          label: difficulty,
         });
       }
     } catch (error) {
@@ -254,6 +300,13 @@ export default function PronunciationTestPage() {
         title: "Error",
         description: "Failed to generate sample. Please try again.",
         variant: "destructive",
+      });
+      
+      // Track sample generation network error
+      event({
+        action: 'pronunciation_sample_network_error',
+        category: 'Pronunciation',
+        label: difficulty,
       });
     } finally {
       setIsLoading(false);
@@ -270,6 +323,14 @@ export default function PronunciationTestPage() {
       return;
     }
 
+    // Track custom text usage
+    event({
+      action: 'pronunciation_custom_text',
+      category: 'Pronunciation',
+      label: customText.substring(0, 30),
+      value: customText.trim().split(/\s+/).length,
+    });
+
     const wordCount = customText.trim().split(/\s+/).length;
     if (wordCount > 20) {
       toast({
@@ -277,6 +338,15 @@ export default function PronunciationTestPage() {
         description: "Please limit your text to 20 words or less.",
         variant: "destructive",
       });
+      
+      // Track custom text error - too long
+      event({
+        action: 'pronunciation_custom_text_too_long',
+        category: 'Pronunciation',
+        label: 'Text too long',
+        value: wordCount,
+      });
+      
       return;
     }
 
@@ -290,11 +360,25 @@ export default function PronunciationTestPage() {
       );
       if (response.meta.code === SUCCESS_CODE && response.data) {
         setCurrentSample(response.data);
+        
+        // Track custom text success
+        event({
+          action: 'pronunciation_custom_text_success',
+          category: 'Pronunciation',
+          label: customText.substring(0, 30),
+        });
       } else {
         toast({
           title: "Error",
           description: "Failed to process custom text. Please try again.",
           variant: "destructive",
+        });
+        
+        // Track custom text error
+        event({
+          action: 'pronunciation_custom_text_error',
+          category: 'Pronunciation',
+          label: 'API Error',
         });
       }
     } catch (error) {
@@ -302,6 +386,13 @@ export default function PronunciationTestPage() {
         title: "Error",
         description: "Failed to process custom text. Please try again.",
         variant: "destructive",
+      });
+      
+      // Track custom text network error
+      event({
+        action: 'pronunciation_custom_text_network_error',
+        category: 'Pronunciation',
+        label: 'Network Error',
       });
     } finally {
       setIsLoading(false);
@@ -332,6 +423,13 @@ export default function PronunciationTestPage() {
     // Update the ref with the latest sample
     currentSampleRef.current = currentSample;
 
+    // Track recording start
+    event({
+      action: 'pronunciation_recording_start',
+      category: 'Pronunciation',
+      label: currentSample.realTranscript.substring(0, 30),
+    });
+
     setRecordingState("recording");
     audioChunksRef.current = [];
 
@@ -345,6 +443,13 @@ export default function PronunciationTestPage() {
         variant: "destructive",
       });
       setRecordingState("idle");
+      
+      // Track recording start error
+      event({
+        action: 'pronunciation_recording_start_error',
+        category: 'Pronunciation',
+        label: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   };
 
@@ -370,6 +475,13 @@ export default function PronunciationTestPage() {
       return;
     }
 
+    // Track recording stop
+    event({
+      action: 'pronunciation_recording_stop',
+      category: 'Pronunciation',
+      label: currentSampleRef.current.realTranscript.substring(0, 30),
+    });
+
     setRecordingState("processing");
     try {
       mediaRecorderRef.current.stop();
@@ -381,6 +493,13 @@ export default function PronunciationTestPage() {
         variant: "destructive",
       });
       setRecordingState("idle");
+      
+      // Track recording stop error
+      event({
+        action: 'pronunciation_recording_stop_error',
+        category: 'Pronunciation',
+        label: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   };
 
@@ -393,6 +512,14 @@ export default function PronunciationTestPage() {
 
     try {
       const base64Audio = await blobToBase64(audioBlob);
+      
+      // Track pronunciation analysis attempt
+      event({
+        action: 'pronunciation_analysis_attempt',
+        category: 'Pronunciation',
+        label: sample.realTranscript.substring(0, 30),
+      });
+      
       const response = await pronunciationService.analyzePronunciation({
         text: sample.realTranscript,
         base64Audio,
@@ -405,15 +532,38 @@ export default function PronunciationTestPage() {
 
         // Play feedback sound based on accuracy
         playFeedbackSound(response.data.pronunciationAccuracy);
+        
+        // Track pronunciation analysis success
+        event({
+          action: 'pronunciation_analysis_success',
+          category: 'Pronunciation',
+          label: sample.realTranscript.substring(0, 30),
+          value: Math.round(response.data.pronunciationAccuracy),
+        });
       } else {
         toast({
           title: "Error",
           description: "Failed to analyze pronunciation. Please try again.",
           variant: "destructive",
         });
+        
+        // Track pronunciation analysis error
+        event({
+          action: 'pronunciation_analysis_error',
+          category: 'Pronunciation',
+          label: 'API Error',
+        });
       }
     } catch (error) {
       console.error("Pronunciation analysis error:", error);
+      
+      // Track pronunciation analysis network error
+      event({
+        action: 'pronunciation_analysis_network_error',
+        category: 'Pronunciation',
+        label: error instanceof Error ? error.message : 'Unknown error',
+      });
+      
       throw error; // Let the caller handle the error
     } finally {
       setRecordingState("completed");
@@ -451,17 +601,61 @@ export default function PronunciationTestPage() {
   const playReferenceAudio = () => {
     if (!currentSample || isPlayingReference) return;
 
+    // Track reference audio play
+    event({
+      action: 'pronunciation_play_reference',
+      category: 'Pronunciation',
+      label: currentSample.realTranscript.substring(0, 30),
+    });
+
     setIsPlayingReference(true);
     const utterance = new SpeechSynthesisUtterance(
       currentSample.realTranscript
     );
     utterance.rate = 0.8;
+    // Force English language for consistent pronunciation
+    utterance.lang = 'en-US';
+    utterance.voice = speechSynthesis.getVoices().find(voice => 
+      voice.lang.includes('en') && !voice.localService
+    ) || null;
     utterance.onend = () => setIsPlayingReference(false);
+    speechSynthesis.speak(utterance);
+  };
+
+  const playSlowReferenceAudio = () => {
+    if (!currentSample || isPlayingSlowReference) return;
+
+    // Track slow reference audio play
+    event({
+      action: 'pronunciation_play_slow_reference',
+      category: 'Pronunciation',
+      label: currentSample.realTranscript.substring(0, 30),
+    });
+
+    setIsPlayingSlowReference(true);
+    const utterance = new SpeechSynthesisUtterance(
+      currentSample.realTranscript
+    );
+    // Much slower rate for clearer pronunciation
+    utterance.rate = 0.5;
+    // Force English language for consistent pronunciation
+    utterance.lang = 'en-US';
+    utterance.voice = speechSynthesis.getVoices().find(voice => 
+      voice.lang.includes('en') && !voice.localService
+    ) || null;
+    utterance.onend = () => setIsPlayingSlowReference(false);
     speechSynthesis.speak(utterance);
   };
 
   const playRecordedAudio = () => {
     if (!recordedAudioRef.current || isPlayingRecorded) return;
+
+    // Track recorded audio play
+    event({
+      action: 'pronunciation_play_recording',
+      category: 'Pronunciation',
+      label: currentSample?.realTranscript?.substring(0, 30) || 'Unknown text',
+    });
 
     setIsPlayingRecorded(true);
     recordedAudioRef.current.onended = () => setIsPlayingRecorded(false);
@@ -469,6 +663,13 @@ export default function PronunciationTestPage() {
   };
 
   const resetTest = () => {
+    // Track test reset
+    event({
+      action: 'pronunciation_reset_test',
+      category: 'Pronunciation',
+      label: currentSample?.realTranscript?.substring(0, 30) || 'Unknown text',
+    });
+    
     setRecordingState("idle");
     setResult(null);
     setCurrentSample(null);
@@ -533,36 +734,56 @@ export default function PronunciationTestPage() {
     totalAttempts > 0 ? Math.round(score / totalAttempts) : 0;
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl min-h-screen text-gray-100">
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6 max-w-7xl min-h-screen text-gray-100">
+      {/* Mobile Header - Only visible on small screens */}
+      <div className="lg:hidden mb-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-bold bg-gradient-to-r from-teal-400 via-blue-500 to-purple-600 text-transparent bg-clip-text">
+            Pronunciation Test
+          </h1>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="bg-gray-800/60 border-gray-700/50 text-blue-400 px-2">
+              {averageScore}% Avg
+            </Badge>
+            <Badge variant="outline" className="bg-gray-800/60 border-gray-700/50 text-purple-400 px-2">
+              {totalAttempts} Tests
+            </Badge>
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-4">
-        {/* Main Content - Flex Layout */}
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* Main Content - Responsive Layout */}
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 items-start">
           {/* Left Panel - Controls */}
-          <Card className="w-full lg:w-80 flex-shrink-0 bg-gray-800/50 border-gray-700 backdrop-blur-sm shadow-xl">
+          <Card className="w-full lg:w-1/4 flex-shrink-0 bg-gray-800/50 border-gray-700 backdrop-blur-sm shadow-xl">
             <CardHeader className="pb-3 border-b border-gray-700/50">
               <CardTitle className="text-lg text-gray-100">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-teal-400 via-blue-500 to-purple-600 text-transparent bg-clip-text">
+                {/* Hide this title on mobile since we have the header above */}
+                <h1 className="hidden lg:block text-xl font-bold bg-gradient-to-r from-teal-400 via-blue-500 to-purple-600 text-transparent bg-clip-text">
                   Pronunciation Test
                 </h1>
+                {/* Mobile title shows controls label instead */}
+                <h2 className="lg:hidden text-base font-medium text-gray-300">Test Controls</h2>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
               {/* Auto Generate */}
               <div className="text-center space-y-2">
-                <p className="text-gray-400">
+                <p className="text-gray-400 text-sm sm:text-base hidden lg:block">
                   Practice your pronunciation with AI-powered feedback
                 </p>
 
-                {/* Stats Cards */}
-                <div className="flex justify-center gap-8 mt-3">
-                  <div className="bg-gray-800/60 backdrop-blur-sm rounded-lg px-4 py-2 flex flex-col items-center border border-gray-700/50">
-                    <span className="text-2xl font-bold text-blue-400">
+                {/* Stats Cards - More compact on mobile, hidden on mobile (moved to header) */}
+                <div className="hidden lg:flex justify-center gap-4 sm:gap-8 mt-3">
+                  <div className="bg-gray-800/60 backdrop-blur-sm rounded-lg px-3 sm:px-4 py-2 flex flex-col items-center border border-gray-700/50">
+                    <span className="text-xl sm:text-2xl font-bold text-blue-400">
                       {averageScore}%
                     </span>
                     <span className="text-xs text-gray-400">Average Score</span>
                   </div>
-                  <div className="bg-gray-800/60 backdrop-blur-sm rounded-lg px-4 py-2 flex flex-col items-center border border-gray-700/50">
-                    <span className="text-2xl font-bold text-purple-400">
+                  <div className="bg-gray-800/60 backdrop-blur-sm rounded-lg px-3 sm:px-4 py-2 flex flex-col items-center border border-gray-700/50">
+                    <span className="text-xl sm:text-2xl font-bold text-purple-400">
                       {totalAttempts}
                     </span>
                     <span className="text-xs text-gray-400">
@@ -575,35 +796,37 @@ export default function PronunciationTestPage() {
                 <Label className="text-sm font-medium text-gray-300">
                   Auto Generate
                 </Label>
-                <Select
-                  value={difficulty}
-                  onValueChange={(value: DifficultyLevel) =>
-                    setDifficulty(value)
-                  }
-                >
-                  <SelectTrigger className="h-9 bg-gray-900/70 border-gray-700 text-gray-200">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
-                    <SelectItem value="EASY">Easy</SelectItem>
-                    <SelectItem value="MEDIUM">Medium</SelectItem>
-                    <SelectItem value="HARD">Hard</SelectItem>
-                    <SelectItem value="RANDOM">Random</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  onClick={generateRandomSample}
-                  disabled={isLoading}
-                  className="w-full h-9 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white"
-                  size="sm"
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Shuffle className="h-4 w-4 mr-2" />
-                  )}
-                  Generate Random
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Select
+                    value={difficulty}
+                    onValueChange={(value: DifficultyLevel) =>
+                      setDifficulty(value)
+                    }
+                  >
+                    <SelectTrigger className="h-10 sm:h-9 bg-gray-900/70 border-gray-700 text-gray-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-700 text-gray-200">
+                      <SelectItem value="EASY">Easy</SelectItem>
+                      <SelectItem value="MEDIUM">Medium</SelectItem>
+                      <SelectItem value="HARD">Hard</SelectItem>
+                      <SelectItem value="RANDOM">Random</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={generateRandomSample}
+                    disabled={isLoading}
+                    className="w-full h-10 sm:h-9 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white"
+                    size="sm"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Shuffle className="h-4 w-4 mr-2" />
+                    )}
+                    Generate Random
+                  </Button>
+                </div>
               </div>
 
               <Separator className="bg-gray-700/50" />
@@ -618,13 +841,13 @@ export default function PronunciationTestPage() {
                   onChange={(e) => setCustomText(e.target.value)}
                   placeholder="Enter your own sentence..."
                   className="min-h-[60px] text-sm bg-gray-900/70 border-gray-700 text-gray-200 placeholder:text-gray-500"
-                  rows={5}
+                  rows={3}
                 />
                 <Button
                   onClick={useCustomText}
                   disabled={!customText.trim() || isLoading}
                   variant="outline"
-                  className="w-full h-9 border-gray-600 text-gray-300 hover:bg-gray-700/50"
+                  className="w-full h-10 sm:h-9 border-gray-600 text-gray-300 hover:bg-gray-700/50"
                   size="sm"
                 >
                   Use Custom Text
@@ -639,198 +862,349 @@ export default function PronunciationTestPage() {
                     onClick={resetTest}
                     variant="outline"
                     size="sm"
-                    className="w-full h-9 border-gray-600 text-gray-300 hover:bg-gray-700/50"
+                    className="w-full h-10 sm:h-9 border-gray-600 text-gray-300 hover:bg-gray-700/50"
                   >
                     <RotateCcw className="h-4 w-4 mr-2" />
                     Start New Test
                   </Button>
                 </>
               )}
+              
+              {/* Mobile-only controls that appear when a sample is selected */}
+              {currentSample && (
+                <div className="lg:hidden mt-2">
+                  <Separator className="bg-gray-700/50 my-4" />
+                  <div className="flex justify-center gap-3">
+                    <Button
+                      onClick={playReferenceAudio}
+                      disabled={isPlayingReference || isPlayingSlowReference}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-10 border-gray-600 text-gray-300 hover:bg-gray-700/50"
+                    >
+                      {isPlayingReference ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Volume2 className="h-4 w-4 mr-1" />
+                      )}
+                      Reference
+                    </Button>
+
+                    <Button
+                      onClick={playSlowReferenceAudio}
+                      disabled={isPlayingReference || isPlayingSlowReference}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-10 border-gray-600 text-gray-300 hover:bg-gray-700/50"
+                    >
+                      {isPlayingSlowReference ? (
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                      ) : (
+                        <Volume2 className="h-4 w-4 mr-1" />
+                      )}
+                      Slow
+                    </Button>
+
+                    {recordedAudioRef.current && (
+                      <Button
+                        onClick={playRecordedAudio}
+                        disabled={isPlayingRecorded}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-10 border-gray-600 text-gray-300 hover:bg-gray-700/50"
+                      >
+                        {isPlayingRecorded ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <Play className="h-4 w-4 mr-1" />
+                        )}
+                        Recording
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           {/* Right Panel - Practice Area */}
           {currentSample ? (
-            <Card className="flex-1 bg-gray-800/50 border-gray-700 backdrop-blur-sm shadow-xl">
+            <Card className="w-full lg:w-3/4 flex-shrink-0 bg-gray-800/50 border-gray-700 backdrop-blur-sm shadow-xl">
               <CardHeader className="pb-3 border-b border-gray-700/50">
-                <CardTitle className="text-lg text-gray-100">
-                  Practice Text
+                <CardTitle className="text-lg text-gray-100 flex justify-between items-center">
+                  <span>Practice Text</span>
+                  {/* Recording indicator for better visibility */}
+                  {recordingState === "recording" && (
+                    <span className="text-xs bg-red-600/80 text-white px-2 py-1 rounded-full animate-pulse flex items-center">
+                      <span className="w-2 h-2 bg-white rounded-full mr-1"></span> Recording
+                    </span>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
                 {/* Text Display */}
                 <div className="text-center space-y-3">
-                  <div className="text-xl font-medium leading-relaxed p-4 bg-gray-900/70 rounded-lg border border-gray-700/50 shadow-inner">
+                  <div className="text-base sm:text-xl font-medium leading-relaxed p-3 sm:p-4 bg-gray-900/70 rounded-lg border border-gray-700/50 shadow-inner">
                     {renderColoredText()}
                   </div>
 
-                  {/* IPA and Translation in same line */}
-                  <div className="flex flex-col sm:flex-row justify-center items-center gap-2 text-sm">
-                    <div className="text-blue-300 font-mono">
-                      / {currentSample.ipaTranscript} /
-                    </div>
-                    {currentSample.transcriptTranslation && (
-                      <>
-                        <span className="hidden sm:inline text-gray-500">
-                          •
-                        </span>
-                        <div className="text-gray-400 italic">
-                          {currentSample.transcriptTranslation}
-                        </div>
-                      </>
-                    )}
+                {/* IPA and Translation - stacked on mobile, side by side on larger screens */}
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-2 text-sm">
+                  <div className="text-blue-300 font-mono">
+                    / {currentSample.ipaTranscript} /
                   </div>
+                  {currentSample.transcriptTranslation && (
+                    <>
+                      <span className="hidden sm:inline text-gray-500">
+                        •
+                      </span>
+                      <div className="text-gray-400 italic">
+                        {currentSample.transcriptTranslation}
+                      </div>
+                    </>
+                  )}
                 </div>
+              </div>
 
-                {/* Audio Controls - Compact */}
-                <div className="flex justify-center gap-3">
+              {/* Audio Controls - Hidden on mobile (moved to left panel) */}
+              <div className="hidden lg:flex justify-center gap-3">
+                <Button
+                  onClick={playReferenceAudio}
+                  disabled={isPlayingReference || isPlayingSlowReference}
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700/50"
+                >
+                  {isPlayingReference ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Volume2 className="h-4 w-4 mr-1" />
+                  )}
+                  Reference
+                </Button>
+
+                <Button
+                  onClick={playSlowReferenceAudio}
+                  disabled={isPlayingReference || isPlayingSlowReference}
+                  variant="outline"
+                  size="sm"
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700/50"
+                >
+                  {isPlayingSlowReference ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Volume2 className="h-4 w-4 mr-1" />
+                  )}
+                  Slow Reference
+                </Button>
+
+                {recordedAudioRef.current && (
                   <Button
-                    onClick={playReferenceAudio}
-                    disabled={isPlayingReference}
+                    onClick={playRecordedAudio}
+                    disabled={isPlayingRecorded}
                     variant="outline"
                     size="sm"
                     className="border-gray-600 text-gray-300 hover:bg-gray-700/50"
                   >
-                    {isPlayingReference ? (
+                    {isPlayingRecorded ? (
                       <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                     ) : (
-                      <Volume2 className="h-4 w-4 mr-1" />
+                      <Play className="h-4 w-4 mr-1" />
                     )}
-                    Reference
+                    Recording
                   </Button>
+                )}
+              </div>
 
-                  {recordedAudioRef.current && (
-                    <Button
-                      onClick={playRecordedAudio}
-                      disabled={isPlayingRecorded}
-                      variant="outline"
-                      size="sm"
-                      className="border-gray-600 text-gray-300 hover:bg-gray-700/50"
-                    >
-                      {isPlayingRecorded ? (
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                      ) : (
-                        <Play className="h-4 w-4 mr-1" />
+              {/* Recording Control - Fixed position on mobile for better UX */}
+              <div className="text-center">
+                {recordingState === "idle" && (
+                  <Button
+                    onClick={startRecording}
+                    size="default"
+                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white px-4 sm:px-6 py-2 w-full sm:w-auto"
+                  >
+                    <Mic className="h-5 w-5 mr-2" />
+                    Start Recording
+                  </Button>
+                )}
+
+                {recordingState === "recording" && (
+                  <Button
+                    onClick={stopRecording}
+                    size="default"
+                    variant="destructive"
+                    className="px-4 sm:px-6 py-2 animate-pulse bg-red-600 hover:bg-red-700 w-full sm:w-auto"
+                  >
+                    <Square className="h-5 w-5 mr-2" />
+                    Stop Recording
+                  </Button>
+                )}
+
+                {recordingState === "processing" && (
+                  <Button
+                    size="default"
+                    disabled
+                    className="px-4 sm:px-6 py-2 bg-gray-700 text-gray-300 w-full sm:w-auto"
+                  >
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Analyzing...
+                  </Button>
+                )}
+
+                {recordingState === "completed" && (
+                  <Button
+                    onClick={() => startRecording()}
+                    size="default"
+                    variant="outline"
+                    className="px-4 sm:px-6 py-2 border-gray-600 text-gray-300 hover:bg-gray-700/50 w-full sm:w-auto"
+                  >
+                    <RotateCcw className="h-5 w-5 mr-2" />
+                    Record Again
+                  </Button>
+                )}
+              </div>
+
+              {/* Results - Responsive layout */}
+              {result && (
+                <div className="space-y-3 p-3 sm:p-4 bg-gray-900/70 rounded-lg border border-gray-700/50 shadow-inner">
+                  <div className="text-center">
+                    <Badge
+                      variant={getScoreBadgeVariant(
+                        result.pronunciationAccuracy
                       )}
-                      Recording
-                    </Button>
-                  )}
-                </div>
-
-                {/* Recording Control - Compact */}
-                <div className="text-center">
-                  {recordingState === "idle" && (
-                    <Button
-                      onClick={startRecording}
-                      size="default"
-                      className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white px-6 py-2"
+                      className="text-sm sm:text-base px-3 sm:px-4 py-1 bg-opacity-20 backdrop-blur-sm"
                     >
-                      <Mic className="h-5 w-5 mr-2" />
-                      Start Recording
-                    </Button>
-                  )}
+                      {result.pronunciationAccuracy}% Accuracy
+                    </Badge>
+                  </div>
 
-                  {recordingState === "recording" && (
-                    <Button
-                      onClick={stopRecording}
-                      size="default"
-                      variant="destructive"
-                      className="px-6 py-2 animate-pulse bg-red-600 hover:bg-red-700"
-                    >
-                      <Square className="h-5 w-5 mr-2" />
-                      Stop Recording
-                    </Button>
-                  )}
-
-                  {recordingState === "processing" && (
-                    <Button
-                      size="default"
-                      disabled
-                      className="px-6 py-2 bg-gray-700 text-gray-300"
-                    >
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                      Analyzing...
-                    </Button>
-                  )}
-
-                  {recordingState === "completed" && (
-                    <Button
-                      onClick={() => startRecording()}
-                      size="default"
-                      variant="outline"
-                      className="px-6 py-2 border-gray-600 text-gray-300 hover:bg-gray-700/50"
-                    >
-                      <RotateCcw className="h-5 w-5 mr-2" />
-                      Record Again
-                    </Button>
-                  )}
-                </div>
-
-                {/* Results - Compact */}
-                {result && (
-                  <div className="space-y-3 p-4 bg-gray-900/70 rounded-lg border border-gray-700/50 shadow-inner">
-                    <div className="text-center">
-                      <Badge
-                        variant={getScoreBadgeVariant(
-                          result.pronunciationAccuracy
-                        )}
-                        className="text-base px-4 py-1 bg-opacity-20 backdrop-blur-sm"
-                      >
-                        {result.pronunciationAccuracy}% Accuracy
-                      </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs mt-3">
-                      <div className="bg-gray-800/50 p-3 rounded-md border border-gray-700/30">
-                        <Label className="font-medium text-xs text-gray-400">
-                          Reference IPA:
-                        </Label>
-                        <div className="font-mono text-blue-300 mt-1">
-                          / {result.realTranscriptsIpa} /
-                        </div>
-                      </div>
-                      <div className="bg-gray-800/50 p-3 rounded-md border border-gray-700/30">
-                        <Label className="font-medium text-xs text-gray-400">
-                          Your IPA:
-                        </Label>
-                        <div className="font-mono text-purple-300 mt-1">
-                          / {result.matchedTranscriptsIpa} /
-                        </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs mt-3">
+                    <div className="bg-gray-800/50 p-2 sm:p-3 rounded-md border border-gray-700/30">
+                      <Label className="font-medium text-xs text-gray-400">
+                        Reference IPA:
+                      </Label>
+                      <div className="font-mono text-blue-300 mt-1 break-words">
+                        / {result.realTranscriptsIpa} /
                       </div>
                     </div>
-
-                    <div className="text-center text-sm mt-2">
-                      {result.pronunciationAccuracy >= 80 ? (
-                        <div className="flex items-center justify-center text-green-500 bg-green-900/20 py-2 px-3 rounded-md">
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Excellent pronunciation!
-                        </div>
-                      ) : result.pronunciationAccuracy >= 60 ? (
-                        <div className="flex items-center justify-center text-yellow-500 bg-yellow-900/20 py-2 px-3 rounded-md">
-                          <CheckCircle className="h-4 w-4 mr-1" />
-                          Good job! Keep practicing.
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center text-red-500 bg-red-900/20 py-2 px-3 rounded-md">
-                          <XCircle className="h-4 w-4 mr-1" />
-                          Keep practicing to improve.
-                        </div>
-                      )}
+                    <div className="bg-gray-800/50 p-2 sm:p-3 rounded-md border border-gray-700/30">
+                      <Label className="font-medium text-xs text-gray-400">
+                        Your IPA:
+                      </Label>
+                      <div className="font-mono text-purple-300 mt-1 break-words">
+                        / {result.matchedTranscriptsIpa} /
+                      </div>
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="flex-1 flex items-center justify-center h-64 bg-gray-800/30 border border-gray-700/50 rounded-lg backdrop-blur-sm">
-              <p className="text-gray-400 text-center">
-                Select a difficulty level and generate a sample to start
-                practicing
-              </p>
-            </div>
-          )}
-        </div>
+
+                  <div className="text-center text-sm mt-2">
+                    {result.pronunciationAccuracy >= 80 ? (
+                      <div className="flex items-center justify-center text-green-500 bg-green-900/20 py-2 px-3 rounded-md">
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Excellent pronunciation!
+                      </div>
+                    ) : result.pronunciationAccuracy >= 60 ? (
+                      <div className="flex items-center justify-center text-yellow-500 bg-yellow-900/20 py-2 px-3 rounded-md">
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Good job! Keep practicing.
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center text-red-500 bg-red-900/20 py-2 px-3 rounded-md">
+                        <XCircle className="h-4 w-4 mr-1" />
+                        Keep practicing to improve.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="flex-1 flex items-center justify-center h-48 sm:h-64 bg-gray-800/30 border border-gray-700/50 rounded-lg backdrop-blur-sm">
+            <p className="text-gray-400 text-center px-4">
+              Select a difficulty level and generate a sample to start
+              practicing
+            </p>
+          </div>
+        )}
       </div>
     </div>
-  );
+    
+    {/* Mobile bottom action bar - provides quick access to controls */}
+    {currentSample && (
+      <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-gray-900/90 backdrop-blur-md border-t border-gray-700 z-10 px-3 py-2 flex items-center justify-between">
+        {recordingState !== "recording" && (
+          <Button
+            onClick={resetTest}
+            variant="ghost"
+            size="sm"
+            className="text-gray-400 hover:text-gray-200 hover:bg-transparent"
+          >
+            <RotateCcw className="h-5 w-5" />
+          </Button>
+        )}
+        
+        {/* Dynamic center button based on recording state */}
+        {recordingState === "idle" && (
+          <Button
+            onClick={startRecording}
+            size="lg"
+            className="h-12 w-12 rounded-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white shadow-lg"
+          >
+            <Mic className="h-6 w-6" />
+          </Button>
+        )}
+        
+        {recordingState === "recording" && (
+          <Button
+            onClick={stopRecording}
+            size="lg"
+            variant="destructive"
+            className="h-12 w-12 rounded-full animate-pulse bg-red-600 hover:bg-red-700 shadow-lg"
+          >
+            <Square className="h-6 w-6" />
+          </Button>
+        )}
+        
+        {recordingState === "processing" && (
+          <div className="h-12 w-12 rounded-full bg-gray-800 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          </div>
+        )}
+        
+        {recordingState === "completed" && (
+          <Button
+            onClick={startRecording}
+            size="lg"
+            className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white shadow-lg"
+          >
+            <RotateCcw className="h-6 w-6" />
+          </Button>
+        )}
+        
+        {recordingState !== "recording" && recordedAudioRef.current && (
+          <Button
+            onClick={playRecordedAudio}
+            variant="ghost"
+            size="sm"
+            disabled={isPlayingRecorded}
+            className="text-gray-400 hover:text-gray-200 hover:bg-transparent"
+          >
+            {isPlayingRecorded ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Play className="h-5 w-5" />
+            )}
+          </Button>
+        )}
+        
+        {/* Placeholder to maintain layout when recording */}
+        {recordingState === "recording" && (
+          <div className="w-5"></div>
+        )}
+      </div>
+    )}
+  </div>
+);
 }

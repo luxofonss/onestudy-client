@@ -35,6 +35,7 @@ import { SUCCESS_CODE } from "@/lib/constants";
 import type { IQuiz, IQuizAttempt } from "@/lib/types/api-types";
 import { AudioPreview } from "@/components/ui/audio-preview";
 import { useParams } from "next/navigation";
+import { trackQuizComplete } from "@/lib/utils/analytics";
 
 // Helper functions
 const formatTimeSpent = (seconds: number): string => {
@@ -105,6 +106,9 @@ export default function QuizResultsPage() {
           attemptResponse.data
         ) {
           setAttempt(attemptResponse.data);
+          
+          // Track quiz completion
+          trackQuizComplete(quizId, attemptResponse.data.score);
         }
       } catch (error) {
         toast({
@@ -510,34 +514,30 @@ export default function QuizResultsPage() {
                   Word-by-Word Analysis:
                 </h4>
                 <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-700/50">
-                  <div className="flex flex-wrap gap-2">
-                    {pronunciationData.realTranscripts
-                      .split(" ")
-                      .map((word: string, wordIndex: number) => {
-                        const correctnessPattern =
-                          pronunciationData.isLetterCorrectAllWords.split(" ")[
-                            wordIndex
-                          ];
-                        const isFullyCorrect =
-                          correctnessPattern &&
-                          !correctnessPattern.includes("0");
-
+                  <div className="text-base font-medium leading-relaxed">
+                    {(() => {
+                      const words = pronunciationData.realTranscripts.split(" ");
+                      const letterCorrectness = pronunciationData.isLetterCorrectAllWords.split(" ");
+                      
+                      return words.map((word, wordIndex) => {
+                        const wordCorrectness = letterCorrectness[wordIndex] || "";
                         return (
-                          <span
-                            key={wordIndex}
-                            className={`px-2 py-1 rounded-md border font-mono text-sm ${
-                              isFullyCorrect
-                                ? "bg-green-900/30 text-green-400 border-green-700/50"
-                                : "bg-red-900/30 text-red-400 border-red-700/50"
-                            }`}
-                          >
-                            {word}
-                            {!isFullyCorrect && (
-                              <span className="ml-1 text-xs">❌</span>
-                            )}
+                          <span key={wordIndex} className="mr-1">
+                            {word.split("").map((letter, letterIndex) => {
+                              const isCorrect = wordCorrectness[letterIndex] === "1";
+                              return (
+                                <span
+                                  key={letterIndex}
+                                  className={isCorrect ? "text-green-500" : "text-red-500"}
+                                >
+                                  {letter}
+                                </span>
+                              );
+                            })}
                           </span>
                         );
-                      })}
+                      });
+                    })()}
                   </div>
                 </div>
               </div>
@@ -570,29 +570,36 @@ export default function QuizResultsPage() {
           result.wordAnalysis &&
           result.wordAnalysis.length > 0 && (
             <>
+              {console.log("Word Analysis Data:", {
+                pronunciationText: result.pronunciationText,
+                question: result.question,
+                wordAnalysis: result.wordAnalysis
+              })}
               {/* Text with Word-by-Word Analysis */}
               <div className="space-y-2">
                 <h4 className="font-medium text-gray-300 text-sm">
                   Word-by-Word Analysis:
                 </h4>
                 <div className="bg-gray-800/40 p-3 rounded-lg border border-gray-700/50">
-                  <div className="flex flex-wrap gap-2">
-                    {result.wordAnalysis.map((word: any, index: number) => (
-                      <span
-                        key={index}
-                        className={`px-2 py-1 rounded-md border font-mono text-sm ${
-                          word.correct
-                            ? "bg-green-900/30 text-green-400 border-green-700/50"
-                            : "bg-red-900/30 text-red-400 border-red-700/50"
-                        }`}
-                        title={`Score: ${word.score}%`}
-                      >
-                        {word.word}
-                        {!word.correct && (
-                          <span className="ml-1 text-xs">❌</span>
-                        )}
-                      </span>
-                    ))}
+                  <div className="text-base font-medium leading-relaxed">
+                    {(() => {
+                      // Find the best source for the text to analyze
+                      const textToAnalyze = result.pronunciationText || 
+                                           (result.wordAnalysis.length > 0 && result.wordAnalysis.map(w => w.word).join(' ')) || 
+                                           result.question || 
+                                           "";
+                      
+                      return textToAnalyze.split(" ").map((word, wordIndex) => {
+                        const wordData = result.wordAnalysis.find(w => w.word.toLowerCase() === word.toLowerCase());
+                        const isCorrect = wordData ? wordData.correct : false;
+                        
+                        return (
+                          <span key={wordIndex} className={`mr-1 ${isCorrect ? "text-green-500" : "text-red-500"}`}>
+                            {word}
+                          </span>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
               </div>
