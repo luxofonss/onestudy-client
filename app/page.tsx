@@ -122,7 +122,7 @@ export default function HomePage() {
                     <span className="font-medium">Test Your Pronunciation</span>
                   </Button>
                 </Link>
-                <Link href="/lib?tab=public">
+                <Link href="/library?tab=public">
                   <Button
                     size="sm"
                     className="gradient-button px-5 py-5 shadow-md hover:shadow-lg transition-all"

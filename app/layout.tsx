@@ -7,6 +7,8 @@ import { Footer } from "@/components/footer";
 import { MobileNav } from "@/components/mobile-nav";
 import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "./providers";
+import { ClientSuspense } from "@/components/providers/ClientSuspense";
+import GoogleAnalytics from "@/components/providers/GoogleAnalytics";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,10 +31,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        <GoogleAnalytics />
         <Providers>
           <div className="flex flex-col min-h-screen">
             <Header />
-            <main className="flex-1 pb-16 md:pb-0">{children}</main>
+            <main className="flex-1 pb-16 md:pb-0">
+              <ClientSuspense>
+                {children}
+              </ClientSuspense>
+            </main>
             <Footer />
             <MobileNav />
             <Toaster />

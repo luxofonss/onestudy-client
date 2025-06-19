@@ -1,8 +1,11 @@
+// Type definitions for Google Analytics gtag.js
 interface Window {
   gtag: (
-    command: 'config' | 'event' | 'js' | 'set', 
+    command: 'config' | 'event' | 'js' | 'set' | 'consent',
     targetId: string,
-    config?: Record<string, any> | Date
+    config?: {
+      [key: string]: any;
+    }
   ) => void;
   dataLayer: any[];
 } 
