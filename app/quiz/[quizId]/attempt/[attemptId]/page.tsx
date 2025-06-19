@@ -727,7 +727,7 @@ export default function QuizAttemptPage() {
       };
 
       // Submit the quiz
-      const response = await quizService.submitQuizAttempt(
+      const response = await quizService.completeQuizAttempt(
         params.attemptId,
         requestBody
       );
